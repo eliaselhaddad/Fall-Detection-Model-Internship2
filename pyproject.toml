@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "gate-matrix-fall-detection"
+version = "0.1.0"
+description = "Fall detection using gate matrix"
+authors = ["Vinnter Developers"]
+classifiers=[
+    "Programming Language :: Python :: 3.10",
+]
+readme = "README.md"
+keywords = ["serverless"]
+
+[tool.poetry.dependencies]
+python = ">=3.10.0,<3.13"
+pandas = "^2.2.0"
+scipy = "^1.12.0"
+matplotlib = "^3.8.2"
+plotly-express = "^0.4.1"
+numpy = "^1.26.4"
+seaborn = "^0.13.2"
+pyqt6 = "^6.6.1"
+loguru = "^0.7.2"
+bleak = "^0.21.1"
+pyarrow = "^15.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
