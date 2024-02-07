@@ -1,12 +1,16 @@
 import os
 
+from dotenv import load_dotenv
 from loguru import logger
 
 from src.aws.s3_helpers.s3_helper import S3Helpers
 
-BUCKET_NAME = "gata-matrix-data"
-RAW_DATA_PREFIX = "raw_data"
-PROCESSED_DATA_PREFIX = "processed_data"
+load_dotenv()
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+RAW_DATA_PREFIX = os.getenv("RAW_DATA_PREFIX")
+PROCESSED_DATA_PREFIX = os.getenv("PROCESSED_DATA_PREFIX")
+PATH_TO_RAW = os.getenv("PATH_TO_RAW")
+PATH_TO_PROCESSED = os.getenv("PATH_TO_PROCESSED")
 s3_helpers_raw_data = S3Helpers(BUCKET_NAME, RAW_DATA_PREFIX)
 s3_helpers_processed_data = S3Helpers(BUCKET_NAME, PROCESSED_DATA_PREFIX)
 
@@ -19,14 +23,14 @@ class SaveDataToS3:
     def save(self):
         filename = os.path.basename(self.data_path)
         if not self.s3_helper.check_file_exists_in_s3_bucket(filename):
+            logger.info(f"Uploading {filename} to S3")
             self.s3_helper.upload_file(self.data_path, filename)
+        else:
+            logger.info(f"{filename} already exists in S3")
 
 
 def main():
     logger.info("Saving data to S3")
-
-    PATH_TO_RAW = "data/raw"
-    PATH_TO_PROCESSED = "data/processed"
 
     for file_name in os.listdir(PATH_TO_RAW):
         file_path = os.path.join(PATH_TO_RAW, file_name)
