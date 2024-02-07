@@ -396,3 +396,7 @@ package/
 # Ignore file
 testing_lambda_weather.ipynb
 testing_lambda_weather.py
+
+
+# ignore infrastructure folder for now
+infrastructure/
