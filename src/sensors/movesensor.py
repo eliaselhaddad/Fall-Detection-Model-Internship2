@@ -25,12 +25,11 @@ Usage:
 import asyncio
 import csv
 import logging
-import signal
 import struct
 import sys
-import threading
 from functools import reduce
 from datetime import datetime
+import os
 
 from bleak import BleakClient
 from bleak import _logger as logger
@@ -120,7 +119,17 @@ class DataView:
 
 
 def save_as_csv():
-    with open(f"sensor_data_{datetime.now()}.csv", "w", newline="") as file:
+    directory = "data/raw/"
+    max_file_count = 0
+
+    for file in os.listdir(directory):
+        if file.startswith("data") and file.endswith(".csv"):
+            number = int(file.replace("data", "").replace(".csv", ""))
+            max_file_count = max(max_file_count, number)
+    max_file_number = max_file_count + 1
+    new_file_name = f"data{max_file_number}.csv"
+
+    with open(new_file_name, "w", newline="") as file:
         writer = csv.writer(file)
         head = ["timestamp", "timestamp_local", "ax", "ay", "az", "fall_state"]
         writer.writerow(head)

@@ -30,6 +30,8 @@ aws-cdk-aws-s3 = "^1.204.0"
 black = "^24.1.1"
 isort = "^5.13.2"
 python-dotenv = "^1.0.1"
+moto = "^5.0.1"
+pytest = "^8.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
