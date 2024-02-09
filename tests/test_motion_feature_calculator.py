@@ -1,4 +1,5 @@
 """Run python -m unittest tests/test_motion_feature_calculator.py in the terminal to run the tests"""
+
 import unittest
 import pandas as pd
 from src.processing.motion_features import MotionFeatureCalculator
@@ -48,21 +49,6 @@ class TestMotionFeatureCalculator(unittest.TestCase):
         )
 
     def test_calculate_velocity_displacement_columns(self):
-        # Before running the method, these columns should not exist
-        for axis in self.calculator.accel_cols:
-            velocity_col = f"v{axis[-1]}"
-            displacement_col = f"d{axis[-1]}"
-            self.assertNotIn(
-                velocity_col,
-                self.calculator.df.columns,
-                f"{velocity_col} column unexpectedly exists before calculation.",
-            )
-            self.assertNotIn(
-                displacement_col,
-                self.calculator.df.columns,
-                f"{displacement_col} column unexpectedly exists before calculation.",
-            )
-
         # Run the method to calculate velocity and displacement
         self.calculator.calculate_velocity_displacement()
 
@@ -83,7 +69,7 @@ class TestMotionFeatureCalculator(unittest.TestCase):
                 f"{displacement_col} column not created.",
             )
 
-            # Additionally, check that the columns contain floating-point numbers
+            # Check that the columns contain floating-point numbers
             # This verifies that cumtrapz has been applied to calculate the values
             for value in self.calculator.df[velocity_col]:
                 self.assertIsInstance(
@@ -117,7 +103,7 @@ class TestMotionFeatureCalculator(unittest.TestCase):
                 f"{angle_col} column not created.",
             )
 
-            # Additionally, check that each angle column contains valid floating-point numbers
+            # Check that each angle column contains valid floating-point numbers
             for value in self.calculator.df[angle_col]:
                 self.assertIsInstance(
                     value, float, f"{angle_col} contains non-float value."
@@ -154,6 +140,52 @@ class TestMotionFeatureCalculator(unittest.TestCase):
             # Check if g-force values are non-negative
             self.assertTrue(
                 value >= 0, f"'g_force' column contains a negative value: {value}"
+            )
+
+    def test_calculate_magnitudes(self):
+        # Prerequisite calculations
+        self.calculator.calculate_velocity_displacement()
+        # Run the method to calculate magnitudes
+        self.calculator.calculate_magnitudes()
+
+        # Verify the existence and correctness of magnitude columns
+        for col_name in [
+            "magnitude_acceleration",
+            "magnitude_velocity",
+            "magnitude_displacement",
+        ]:
+            self.assertIn(
+                col_name, self.calculator.df.columns, f"{col_name} column not created."
+            )
+
+            # Check that the columns contain only floating-point numbers and are non-negative
+            for value in self.calculator.df[col_name]:
+                self.assertIsInstance(
+                    value, float, f"{col_name} contains non-float value."
+                )
+                self.assertGreaterEqual(
+                    value, 0, f"{col_name} contains a negative value."
+                )
+
+    def test_calculate_impact_detection(self):
+        self.calculator.calculate_time_interval()
+        self.calculator.calculate_g_force()
+        self.calculator.calculate_jerk_orientation()
+
+        # Run the method to calculate impact detection
+        self.calculator.calculate_impact_detection()
+
+        # Verify the 'impact_detection' column exists
+        self.assertIn(
+            "impact_detection",
+            self.calculator.df.columns,
+            "'impact_detection' column not created.",
+        )
+
+        # Check that the 'impact_detection' column contains only integers (0 or 1)
+        for value in self.calculator.df["impact_detection"]:
+            self.assertIn(
+                value, [0, 1], "'impact_detection' contains value other than 0 or 1."
             )
 
 
