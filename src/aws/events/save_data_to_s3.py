@@ -1,16 +1,22 @@
 import os
 
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from loguru import logger
 
 from src.aws.s3_helpers.s3_helper import S3Helpers
 
-load_dotenv()
-BUCKET_NAME = os.getenv("BUCKET_NAME")
-RAW_DATA_PREFIX = os.getenv("RAW_DATA_PREFIX")
-PROCESSED_DATA_PREFIX = os.getenv("PROCESSED_DATA_PREFIX")
-PATH_TO_RAW = os.getenv("PATH_TO_RAW")
-PATH_TO_PROCESSED = os.getenv("PATH_TO_PROCESSED")
+# load_dotenv()
+# BUCKET_NAME = os.getenv("BUCKET_NAME")
+# RAW_DATA_PREFIX = os.getenv("RAW_DATA_PREFIX")
+# PROCESSED_DATA_PREFIX = os.getenv("PROCESSED_DATA_PREFIX")
+# PATH_TO_RAW = os.getenv("PATH_TO_RAW")
+# PATH_TO_PROCESSED = os.getenv("PATH_TO_PROCESSED")
+
+BUCKET_NAME = "gata-matrix-data"
+RAW_DATA_PREFIX = "raw_data"
+PROCESSED_DATA_PREFIX = "processed_data"
+PATH_TO_RAW = "data/raw"
+PATH_TO_PROCESSED = "data/processed"
 s3_helpers_raw_data = S3Helpers(BUCKET_NAME, RAW_DATA_PREFIX)
 s3_helpers_processed_data = S3Helpers(BUCKET_NAME, PROCESSED_DATA_PREFIX)
 
