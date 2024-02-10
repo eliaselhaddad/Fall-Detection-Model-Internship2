@@ -400,3 +400,12 @@ testing_lambda_weather.py
 
 # ignore infrastructure folder for now
 infrastructure/
+data/
+notebooks/
+
+# ignore notebook checkpoints
+*.ipynb
+*.ipynb_checkpoints
+logs/
+
+data/
