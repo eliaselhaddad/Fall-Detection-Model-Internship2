@@ -400,3 +400,6 @@ testing_lambda_weather.py
 
 # ignore infrastructure folder for now
 infrastructure/
+
+data/
+logs/
