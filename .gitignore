@@ -402,6 +402,5 @@ testing_lambda_weather.py
 infrastructure/
 
 data/
-
+logs/
 notebooks/
-notebooks/eda_elias.ipynb
