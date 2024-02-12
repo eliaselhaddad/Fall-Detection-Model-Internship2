@@ -400,3 +400,8 @@ testing_lambda_weather.py
 
 # ignore infrastructure folder for now
 infrastructure/
+
+data/
+
+notebooks/
+notebooks/eda_elias.ipynb

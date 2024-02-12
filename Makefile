@@ -102,6 +102,12 @@ integration_tests: build
 	pytest tests/integration --cov-config=.coveragerc --cov=gate_matrix_fall_detection --cov-report html && \
 	deactivate
 
+test_all:
+	@echo "Running all tests..."
+	@source .venv/bin/activate && \
+	python -m unittest discover -s tests -p 'test_*.py' -v && \
+	deactivate
+
 e2e_tests: venv build
 	pytest tests/e2e --cov-config=.coveragerc --cov=gate_matrix_fall_detection --cov-report xml
 

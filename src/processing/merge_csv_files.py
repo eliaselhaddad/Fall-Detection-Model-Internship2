@@ -73,7 +73,7 @@ class CSVFilesMerger:
         logging.info(f"Merged CSV file saved to {output_path}")
 
 
-if __name__ == "__main__":
+def main():
     input_dir = Path("data/processed/")
     output_dir = Path("data/cleaned/")
     output_name = "merged_data.csv"
@@ -82,3 +82,7 @@ if __name__ == "__main__":
     merged_df = merger.merge_and_process_files()
     merger.check_for_missing_values(merged_df)
     merger.save_merged_csv(merged_df)
+
+
+if __name__ == "__main__":
+    main()
