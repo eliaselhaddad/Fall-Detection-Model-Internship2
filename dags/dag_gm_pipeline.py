@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
 
+# from airflow.hooks.S3_hook import S3Hook
+
 # import sys
 # from pathlib import Path
 
@@ -9,6 +11,10 @@ from airflow.decorators import dag, task
 
 from src.aws.events import get_data_from_s3, save_data_to_s3
 from src.processing import data_processor
+
+# def s3_connection(**kwargs):
+#     hook = S3Hook(aws_conn_id="gm_s3_conn_id")
+#     keys = hook.list_keys(bucket_name="gata-matrix-data")
 
 
 @task(task_id="process_data")
@@ -32,6 +38,7 @@ def get_data_from_s3_task() -> None:
     catchup=False,
     tags=["gatematrix"],
     description="DAG for processing data from S3",
+    # python_callable=s3_connection
 )
 def pipeline():
     (get_data_from_s3_task() >> process_data_task() >> save_data_to_s3_task())
