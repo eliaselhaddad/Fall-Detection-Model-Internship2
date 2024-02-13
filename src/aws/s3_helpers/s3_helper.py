@@ -9,7 +9,15 @@ class S3Helpers:
     def __init__(self, bucket: str, prefix: str):
         self.bucket = bucket
         self.prefix = prefix
-        self.s3_client = boto3.client("s3")
+        self.aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+        self.aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+        self.aws_session_token = os.environ.get("AWS_SESSION_TOKEN")
+        self.s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+            aws_session_token=self.aws_session_token,
+        )
         self.s3_resource = boto3.resource("s3")
 
     def check_file_exists_in_s3_bucket(self, filename: str) -> bool:
