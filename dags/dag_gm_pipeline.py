@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
 
-from airflow.decorators import dag, task
 from airflow.operators.python import PythonOperator
 from airflow import DAG
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 
 from src.aws.events import get_data_from_s3, save_data_to_s3
 from src.processing import data_processor
