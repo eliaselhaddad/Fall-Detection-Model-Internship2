@@ -44,29 +44,27 @@
 #
 # Feel free to modify this file to suit your needs.
 ---
-x-airflow-common:
-  &airflow-common
+x-airflow-common: &airflow-common
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.8.1}
   # build: .
-  environment:
-    &airflow-common-env
+  environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
-    AIRFLOW__CORE__FERNET_KEY: 'ulrALwJ4qlgx4GCP1dpj1Zx7ZoKXQsS1mvF_iQOoib4='
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__CORE__FERNET_KEY: "ulrALwJ4qlgx4GCP1dpj1Zx7ZoKXQsS1mvF_iQOoib4="
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
     PYTHONPATH: "/opt/airflow/dags:/opt/airflow/src:${PYTHONPATH:-}"
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
     # yamllint enable rule:line-length
-    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
@@ -78,8 +76,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
     - ${AIRFLOW_PROJ_DIR:-.}/src:/opt/airflow/src
   user: "${AIRFLOW_UID:-50000}:0"
-  depends_on:
-    &airflow-common-depends-on
+  depends_on: &airflow-common-depends-on
     redis:
       condition: service_healthy
     postgres:
@@ -134,9 +131,11 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-    # environment:
-    #   - AWS_SECRET_ACCESS_KEY=Mi5mtwpDWCFy+6F7+kz4ocdv2fqez5h6GecwQFy1
-    #   - AWS_SESSION_TOKEN=IQoJb3JpZ2luX2VjEIP//////////wEaCmV1LW5vcnRoLTEiRzBFAiEAx5jERK1lZaElvszN7gpIJgZUbN8e6WdLR0dwiCJok+sCIAs7y2v2jBE/O0/XIuu4H3Rf9qAawowfBOhLvj9pTec8KpsDCFwQABoMNzk2NzE3MzA1ODY0Igy6blW5TZ+Kh0K7FnEq+AJgKEu5sW+HSHgfBRN5Yr80wBrv+b6wzKkzjQMb7yh6YktfECBwEt/ufsdH9f7s4H4kq1NWq4AcMQdjNkiHdIETP8pFThwDo2XSotqFMQntx7+UAmv7hqb3cHax8DGhvLAszdXCjtV+38iBeHF/YX9BamlNEsTn7n8cehSNgxqxkZfo3Ffd4jAzvVm0EnFVnsibwWwIyM2YIR2U565BLkpauzOdV584PuxjP8aw2oxjYxRVhJJBhwXVB5skb/5zLcB30MsZQ+adwokpfhgLvW58KS17a5/q9lrJLJKsYo2vjvEdM31Ik4/yaLRfRcYhJwMi+uYKhdlX/91wE8o9c9XOBa7I1JnVseh3EQaZRbT1rY+53Aa1K34xO3WvuYGwWZb/YM96+p9QaNYQOufZY60DzXMSw5aT3p2qpXt7sPbt4nMbb7Y11ZoVQE0uw9nVU2qcPn9Y5Te0mHDZUa3HDWV6Aczb8rr6lk4OZMmCffxSNnpD/Ei6jKciMNvtp64GOqYBQZgfADV0HDwdTRmFZN+2Zsm4edNTSnBzon3LEOIO1ETAkc5UBMl7kkeO3xCG+aLezTqMUUY766oC1Gytc+AByExUSqGziKEV2hArzdcTaA3qk1AUaNBbJPbkwDe8lsB0quYsWdjtbyDJaw7KHgv93NpOCcjunGb7UMa3a8BkS3uZb0wvOvpwKordx0q5/4wB51d6jj0ATjqGktWw5UY5nOXYbVzYfw==
+    environment:
+      <<: *airflow-common-env
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
 
   airflow-scheduler:
     <<: *airflow-common
@@ -152,10 +151,11 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
-    # environment:
-    #   - AWS_SECRET_ACCESS_KEY=Mi5mtwpDWCFy+6F7+kz4ocdv2fqez5h6GecwQFy1
-    #   - AWS_SESSION_TOKEN=IQoJb3JpZ2luX2VjEIP//////////wEaCmV1LW5vcnRoLTEiRzBFAiEAx5jERK1lZaElvszN7gpIJgZUbN8e6WdLR0dwiCJok+sCIAs7y2v2jBE/O0/XIuu4H3Rf9qAawowfBOhLvj9pTec8KpsDCFwQABoMNzk2NzE3MzA1ODY0Igy6blW5TZ+Kh0K7FnEq+AJgKEu5sW+HSHgfBRN5Yr80wBrv+b6wzKkzjQMb7yh6YktfECBwEt/ufsdH9f7s4H4kq1NWq4AcMQdjNkiHdIETP8pFThwDo2XSotqFMQntx7+UAmv7hqb3cHax8DGhvLAszdXCjtV+38iBeHF/YX9BamlNEsTn7n8cehSNgxqxkZfo3Ffd4jAzvVm0EnFVnsibwWwIyM2YIR2U565BLkpauzOdV584PuxjP8aw2oxjYxRVhJJBhwXVB5skb/5zLcB30MsZQ+adwokpfhgLvW58KS17a5/q9lrJLJKsYo2vjvEdM31Ik4/yaLRfRcYhJwMi+uYKhdlX/91wE8o9c9XOBa7I1JnVseh3EQaZRbT1rY+53Aa1K34xO3WvuYGwWZb/YM96+p9QaNYQOufZY60DzXMSw5aT3p2qpXt7sPbt4nMbb7Y11ZoVQE0uw9nVU2qcPn9Y5Te0mHDZUa3HDWV6Aczb8rr6lk4OZMmCffxSNnpD/Ei6jKciMNvtp64GOqYBQZgfADV0HDwdTRmFZN+2Zsm4edNTSnBzon3LEOIO1ETAkc5UBMl7kkeO3xCG+aLezTqMUUY766oC1Gytc+AByExUSqGziKEV2hArzdcTaA3qk1AUaNBbJPbkwDe8lsB0quYsWdjtbyDJaw7KHgv93NpOCcjunGb7UMa3a8BkS3uZb0wvOvpwKordx0q5/4wB51d6jj0ATjqGktWw5UY5nOXYbVzYfw==
-
+    environment:
+      <<: *airflow-common-env
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
 
   airflow-worker:
     <<: *airflow-common
@@ -173,6 +173,9 @@ services:
       <<: *airflow-common-env
       # Required to handle warm shutdown of the celery workers properly
       # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       DUMB_INIT_SETSID: "0"
     restart: always
     depends_on:
@@ -184,7 +187,11 @@ services:
     <<: *airflow-common
     command: triggerer
     healthcheck:
-      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      test:
+        [
+          "CMD-SHELL",
+          'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -194,6 +201,11 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    environment:
+      <<: *airflow-common-env
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
 
   airflow-init:
     <<: *airflow-common
@@ -250,11 +262,14 @@ services:
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
-      _PIP_ADDITIONAL_REQUIREMENTS: ''
+      _PIP_ADDITIONAL_REQUIREMENTS: ""
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
     user: "0:0"
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
@@ -267,6 +282,9 @@ services:
       <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
     # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
     command:
       - bash
       - -c
