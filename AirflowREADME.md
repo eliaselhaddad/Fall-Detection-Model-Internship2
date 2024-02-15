@@ -8,6 +8,7 @@ This readme helps with setting up airflow
     - let the magic happen!
 
 - loggin to airflow:
+    - go to: localhost:8080
     - username: airflow
     - password: airflow
 
