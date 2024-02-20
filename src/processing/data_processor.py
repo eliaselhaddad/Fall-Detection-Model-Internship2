@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import dataclasses
 
 import numpy as np
 import pandas as pd
@@ -7,12 +8,16 @@ from loguru import logger
 
 from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
+from src.interfaces.models import Acceleration
 
 
 class DataProcessor:
     def __init__(self, raw, processed):
         self.raw = Path(raw)
         self.processed = Path(processed)
+        self.required_accelerometer_columns = [
+            field.name for field in dataclasses.fields(Acceleration)
+        ]
 
     def load_data(self, filename):
         logger.info(f"Loading data from {filename}")
@@ -26,7 +31,9 @@ class DataProcessor:
 
     def process_data(self, data, filename):
         try:
-            validated_data = DataValidator(data, filename=filename).validate()
+            validated_data = DataValidator(
+                data, required_accelerator_columns=self.required_accelerometer_columns
+            ).validate()
             motion_feature_calculator = MotionFeatureCalculator(
                 validated_data, "timestamp", ["ax", "ay", "az"]
             )
