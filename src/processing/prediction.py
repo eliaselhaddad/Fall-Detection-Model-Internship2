@@ -1,9 +1,9 @@
+from datetime import datetime
+
 import joblib
+import pandas as pd
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
-
-import pandas as pd
-from datetime import datetime
 from loguru import logger
 
 

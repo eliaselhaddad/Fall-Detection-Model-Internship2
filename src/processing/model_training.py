@@ -1,15 +1,16 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime
 import os
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout, Bidirectional
+from datetime import datetime
+
+import joblib
+import numpy as np
+import pandas as pd
 from keras.callbacks import EarlyStopping
+from keras.layers import LSTM, Bidirectional, Dense, Dropout
+from keras.models import Sequential
 from keras.preprocessing.sequence import pad_sequences
 from loguru import logger
-import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 
 class ModelTraining:
