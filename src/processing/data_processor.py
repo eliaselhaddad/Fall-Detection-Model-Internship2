@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 import dataclasses
@@ -8,7 +9,7 @@ from loguru import logger
 
 from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
-from src.interfaces.models import Acceleration
+from src.models.acceleration import Acceleration
 
 
 class DataProcessor:
@@ -77,16 +78,28 @@ class DataProcessor:
             raise e
 
 
-def setup_directories():
+def setup_directories(use_sample=False):
+    PATH_TO_PROCESSED = "data/processed"
+    PATH_TO_RAW = "data/raw"
+
+    if use_sample:
+        PATH_TO_RAW = "data/sample_raw"
+        PATH_TO_PROCESSED = "data/sample_processed"
+    else:
+        PATH_TO_RAW = "data/raw"
+        PATH_TO_PROCESSED = "data/processed"
+
     assert os.path.exists("data"), logger.error("Data directory does not exist")
     assert os.path.exists("data/processed"), logger.error(
         "Processed data directory does not exist"
     )
     assert os.path.exists("data/raw"), logger.error("Raw data directory does not exist")
-
-    PATH_TO_PROCESSED = "data/processed"
-    PATH_TO_RAW = "data/raw"
-
+    assert os.path.exists("data/sample_raw"), logger.error(
+        "Sample raw data directory does not exist"
+    )
+    assert os.path.exists("data/sample_processed"), logger.error(
+        "Sample processed data directory does not exist"
+    )
     if not os.path.exists(PATH_TO_PROCESSED):
         logger.info(f"Creating processed data directory at {PATH_TO_PROCESSED}")
         os.makedirs(PATH_TO_PROCESSED)
@@ -94,10 +107,10 @@ def setup_directories():
     return PATH_TO_RAW, PATH_TO_PROCESSED
 
 
-def main():
+def main(use_sample):
     logger.info("Starting data processing")
 
-    PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories()
+    PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories(use_sample=use_sample)
     data_processor = DataProcessor(PATH_TO_RAW, PATH_TO_PROCESSED)
 
     logger.info("Processing files")
@@ -106,4 +119,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Process raw data")
+    parser.add_argument(
+        "--use_sample",
+        action="store_true",
+        help="Use sample data instead of full dataset",
+    )
+    args = parser.parse_args()
+    main(args.use_sample)

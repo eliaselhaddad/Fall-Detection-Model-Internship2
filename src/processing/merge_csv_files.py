@@ -1,3 +1,4 @@
+import argparse
 import pandas as pd
 from pathlib import Path
 import logging
@@ -73,9 +74,13 @@ class CSVFilesMerger:
         logging.info(f"Merged CSV file saved to {output_path}")
 
 
-def main():
-    input_dir = Path("data/processed/")
-    output_dir = Path("data/cleaned/")
+def main(use_sample=False):
+    if use_sample:
+        input_dir = Path("data/sample_processed/")
+        output_dir = Path("data/sample_cleaned/")
+    else:
+        input_dir = Path("data/processed/")
+        output_dir = Path("data/cleaned/")
     output_name = "merged_data.csv"
 
     merger = CSVFilesMerger(input_dir, output_dir, output_name)
@@ -85,4 +90,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Merge CSV files")
+    parser.add_argument(
+        "--use_sample", action="store_true", help="Use sample data for final processing"
+    )
+    args = parser.parse_args()
+    main(args.use_sample)
