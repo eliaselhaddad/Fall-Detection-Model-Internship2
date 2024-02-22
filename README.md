@@ -27,3 +27,11 @@ Run
 Due to complications with python modules:
  - run for example:
     - python -m src.processing.data_processor
+
+
+To process and predict sample data:
+- Place data in data/sample_raw
+- Use --use_sample tag
+    - python -m src.processing.data_processor --use_sample
+    - python -m src.processing.merge_csv_files --use_sample
+    - python -m src.processing.prediction
