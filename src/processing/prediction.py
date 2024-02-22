@@ -13,6 +13,14 @@ class FallPrediction:
         self.scaler_path = path_to_scaler
         self.data = pd.read_csv(path_to_data)
 
+    def check_data_size(self, min_size=100):
+        if len(self.data) < min_size:
+            logger.error(f"Data length is less than {min_size} required for prediction")
+            raise ValueError(
+                f"Data length is less than {min_size} required for prediction"
+            )
+        logger.info(f"Data length: {len(self.data)} passed the check")
+
     def load_scaler(self, scaler_path):
         try:
             logger.info(f"Loading scaler from {scaler_path}")
@@ -57,6 +65,8 @@ class FallPrediction:
                 data.shape
             )
             logger.info("Data scaled")
+            # log the scaled data
+            logger.info(f"Scaled data: {self.data.shape}")
             return self.data
         except Exception as e:
             logger.error(f"Error scaling data: {e}")
@@ -71,13 +81,12 @@ class FallPrediction:
             raise Exception(f"Error predicting: {e}")
 
     def predict_fall(self):
+        self.check_data_size()
         try:
             if self.predict() > 0.5:
                 logger.warning("Fall detected")
-                print("Fall detected")
             else:
                 logger.success("No fall detected")
-                print("No fall detected")
         except Exception as e:
             logger.error(f"Error predicting fall: {e}")
             raise Exception(f"Error predicting fall: {e}")

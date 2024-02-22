@@ -104,7 +104,7 @@ class AnnotateAccelerometerData(QMainWindow):
         elif self.fall_state == "Restart":
             acceleration.fall_state = "3"
         else:
-            acceleration.fall_state = "2"
+            acceleration.fall_state = "0"
         DATA_POINTS.append(acceleration)
 
     def save_as_csv(self):
