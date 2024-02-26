@@ -2,16 +2,18 @@
 
 import unittest
 from pathlib import Path
-from typing import List
 import pandas as pd
 import shutil
 import numpy as np
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from src.processing.csv_processing_pipeline import (
+    CSVFileManager,
+    CSVPreprocessor,
+    CSVMerger,
+)
 
-from src.processing.merge_csv_files import CSVFilesMerger
 
-
-class TestCSVFilesMerger(unittest.TestCase):
+class TestCSVProcessingPipeline(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_dir: Path = Path("temp_test_dir")
@@ -22,7 +24,7 @@ class TestCSVFilesMerger(unittest.TestCase):
         cls.output_dir.mkdir(exist_ok=True)
 
         # Create sample CSV file
-        sample_data: pd.DataFrame = pd.DataFrame(
+        cls.sample_data: pd.DataFrame = pd.DataFrame(
             {
                 "timestamp": pd.date_range(start="2021-01-01", periods=5, freq="T"),
                 "ax": np.random.rand(5),
@@ -50,45 +52,63 @@ class TestCSVFilesMerger(unittest.TestCase):
                 "impact_detection": [0, 0, 1, 0, 1],
             }
         )
-        sample_data.to_csv(cls.input_dir / "sample1.csv", index=False)
-        sample_data.to_csv(cls.input_dir / "sample2.csv", index=False)
+        cls.sample_data.to_csv(cls.input_dir / "sample1.csv", index=False)
+        cls.sample_data.to_csv(cls.input_dir / "sample2.csv", index=False)
 
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.temp_dir)
 
-    @patch("src.processing.merge_csv_files.CSVFilesMerger.merge_and_process_files")
-    def test_save_merged_csv(self, mock_merge: pd.DataFrame) -> None:
-        # Setup mock
-        mock_df = pd.DataFrame({"column1": [1, 2], "column2": [3, 4]})
-        mock_merge.return_value = mock_df
+    def test_find_csv_files(self) -> None:
+        # Arrange
+        file_manager = CSVFileManager(self.input_dir, self.output_dir)
 
-        # Instantiate class and call the method under test
-        merger = CSVFilesMerger(self.input_dir, self.output_dir, "merged.csv")
-        merger.save_merged_csv(mock_df)
+        # Act
+        found_files = file_manager.find_csv_files()
 
-        # Verify the file was saved
-        saved_file_path = self.output_dir / "merged.csv"
-        self.assertTrue(saved_file_path.exists(), "Merged CSV file was not saved.")
+        # Assert
+        self.assertEqual(len(found_files), 2, "Should find two CSV files.")
 
-        # Verify the content of the saved file matches mock_df
-        saved_df = pd.read_csv(saved_file_path)
-        pd.testing.assert_frame_equal(saved_df, mock_df, check_dtype=False)
+    def test_csv_preprocessor(self) -> None:
+        # Arrange
+        preprocessor = CSVPreprocessor()
+        file_path = self.input_dir / "sample1.csv"
 
-        # Cleanup after test
-        saved_file_path.unlink()
+        # Act
+        processed_df = preprocessor.process(file_path)
 
-    def test_merged_csv_columns_count(self) -> None:
-        merger: CSVFilesMerger = CSVFilesMerger(
-            self.input_dir, self.output_dir, "merged.csv"
+        # Assert
+        expected_columns = set(self.sample_data.columns) - {
+            "timestamp",
+            "time_interval",
+        }
+        self.assertTrue(
+            set(processed_df.columns).issubset(expected_columns),
+            "Processed DataFrame should not contain 'timestamp' or 'time_interval' columns.",
         )
-        merged_df: pd.DataFrame = merger.merge_and_process_files()
-        expected_columns_count = 22
-        actual_columns_count = len(merged_df.columns)
+        self.assertFalse(
+            processed_df.isnull().values.any(),
+            "Processed DataFrame should not contain any null values.",
+        )
+
+    def test_csv_merger(self) -> None:
+        # Arrange
+        preprocessor = CSVPreprocessor()
+        merger = CSVMerger()
+        processed_files = [
+            preprocessor.process(self.input_dir / f)
+            for f in ["sample1.csv", "sample2.csv"]
+        ]
+
+        # Act
+        merged_df = merger.merge(processed_files)
+
+        # Assert
+        expected_row_count = sum(df.shape[0] for df in processed_files)
         self.assertEqual(
-            actual_columns_count,
-            expected_columns_count,
-            f"Expected {expected_columns_count} columns, but found {actual_columns_count}.",
+            merged_df.shape[0],
+            expected_row_count,
+            "Merged DataFrame should have the combined row count of all processed files.",
         )
 
 
