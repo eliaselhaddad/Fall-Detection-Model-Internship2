@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 import joblib
 import pandas as pd
@@ -6,53 +7,86 @@ from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from loguru import logger
 
+from src.helper_functions.model_helper_functions import ModelHelpingFunctions
+
+PERCENTAGE_LINES = 0.75
+END_INDEX = 40
+MIN_DATA_SIZE = 20
+PROBABILTY_THRESHOLD = 0.5
+
 
 class FallPrediction:
     def __init__(self, model_path, path_to_scaler, path_to_data):
         self.model = load_model(model_path)
         self.scaler_path = path_to_scaler
-        self.data = pd.read_csv(path_to_data)
+        self.model_helper = ModelHelpingFunctions()
+        self.df = pd.read_csv(path_to_data)
+        self.data = self.crop_data(self.df)
 
-    def check_data_size(self, min_size=100):
+    def crop_data(self, data: pd.DataFrame):
+        try:
+            if "jerk" not in data.columns:
+                self.model_helper.log_error("Data does not contain 'jerk' column")
+                raise ValueError("Data does not contain 'jerk' column")
+            max_jerk_index = data["jerk"].idxmax()
+            self.model_helper.log_info(f"Max jerk index: {max_jerk_index}")
+            lines_before_max = max_jerk_index
+            percent_lines = int(lines_before_max * PERCENTAGE_LINES)
+            start_index = max(0, max_jerk_index - percent_lines)
+            self.model_helper.log_info(f"Start index: {start_index}")
+            end_index = min(len(data), max_jerk_index + END_INDEX)
+            self.model_helper.log_info(f"End index: {end_index}")
+
+            cropped_data = data.iloc[start_index:end_index]
+            return cropped_data
+        except Exception as e:
+            self.model_helper.log_exception(f"Error cropping data: {e}")
+            raise Exception(f"Error cropping data: {e}")
+
+    def check_data_size(self, min_size=MIN_DATA_SIZE):
         if len(self.data) < min_size:
-            logger.error(f"Data length is less than {min_size} required for prediction")
+            self.model_helper.log_error(
+                f"Data length is less than {min_size} required for prediction"
+            )
             raise ValueError(
                 f"Data length is less than {min_size} required for prediction"
             )
-        logger.info(f"Data length: {len(self.data)} passed the check")
+        self.model_helper.log_info(f"Data length: {len(self.data)} passed the check")
 
     def load_scaler(self, scaler_path):
         try:
-            logger.info(f"Loading scaler from {scaler_path}")
+            self.model_helper.log_info(f"Loading scaler from {scaler_path}")
             with open(scaler_path, "rb") as file:
                 self.scaler = joblib.load(file)
             return self.scaler
         except FileNotFoundError as e:
-            logger.error(f"File not found: {e}")
+            self.model_helper.log_error(f"File not found: {e}")
             raise FileNotFoundError(f"File not found: {e}")
         except Exception as e:
-            logger.error(f"Error loading scaler: {e}")
+            self.model_helper.log_error(f"Error loading scaler: {e}")
             raise Exception(f"Error loading scaler: {e}")
 
     def convert_to_numpy(self):
         try:
-            logger.info("Converting to numpy")
+            self.model_helper.log_info("Converting to numpy")
+            self.data = self.data.drop(columns=["fall_state"])
+            self.model_helper.log_info(f"Data shape: {self.data.shape}")
             self.data = self.data.to_numpy()
             return self.data
         except Exception as e:
-            logger.error(f"Error converting to numpy: {e}")
+            self.model_helper.log_exception(f"Error converting to numpy: {e}")
             raise Exception(f"Error converting to numpy: {e}")
 
     def pad_data(self):
         try:
-            logger.info("Padding data")
+            self.model_helper.log_info("Padding data")
             data = self.convert_to_numpy()
             self.data = pad_sequences(
                 [data], maxlen=1339, dtype="float32", padding="post", truncating="post"
             )
             return self.data
         except Exception as e:
-            logger.error(f"Error padding data: {e}")
+            self.model_helper.log_exception(f"Error padding data: {e}")
             raise Exception(f"Error padding data: {e}")
 
     def scale_data(self):
@@ -60,16 +94,14 @@ class FallPrediction:
             data = self.pad_data()
             scaler = self.load_scaler(self.scaler_path)
 
-            logger.info("Scaling data")
+            self.model_helper.log_info("Scaling data")
             self.data = scaler.transform(data.reshape(-1, data.shape[-1])).reshape(
                 data.shape
             )
-            logger.info("Data scaled")
-            # log the scaled data
-            logger.info(f"Scaled data: {self.data.shape}")
+            self.model_helper.log_info(f"Scaled data: {self.data.shape}")
             return self.data
         except Exception as e:
-            logger.error(f"Error scaling data: {e}")
+            self.model_helper.log_exception(f"Error scaling data: {e}")
             raise Exception(f"Error scaling data: {e}")
 
     def predict(self):
@@ -77,27 +109,62 @@ class FallPrediction:
             data = self.scale_data()
             return self.model.predict(data)
         except Exception as e:
-            logger.error(f"Error predicting: {e}")
+            self.model_helper.log_exception(f"Error predicting: {e}")
             raise Exception(f"Error predicting: {e}")
 
     def predict_fall(self):
         self.check_data_size()
+
         try:
-            if self.predict() > 0.5:
-                logger.warning("Fall detected")
+            prediction = self.predict()
+            probability = prediction[0][0]
+
+            if probability > PROBABILTY_THRESHOLD:
+                self.model_helper.log_warning(
+                    f"Fall detected with probability: {probability}"
+                )
+                self.model_helper.log_warning("Fall detected")
             else:
-                logger.success("No fall detected")
+                self.model_helper.log_success(
+                    f"No fall detected with probability: {probability}"
+                )
+                self.model_helper.log_success("No fall detected")
         except Exception as e:
-            logger.error(f"Error predicting fall: {e}")
+            self.model_helper.log_exception(f"Error predicting fall: {e}")
             raise Exception(f"Error predicting fall: {e}")
 
 
+def get_latest_model_date(directory_path):
+    try:
+        logger.info(f"Scanning directory: {directory_path} for latest model")
+
+        all_items = os.listdir(directory_path)
+        dates = [
+            datetime.strptime(item, "%Y-%m-%d")
+            for item in all_items
+            if os.path.isdir(os.path.join(directory_path, item))
+        ]
+
+        if not dates:
+            logger.error(f"No model found in directory {directory_path}")
+            raise FileNotFoundError("No model found in directory")
+
+        latest_date = max(dates).strftime("%Y-%m-%d")
+        logger.info(f"Latest model found: {latest_date}")
+        return latest_date
+    except Exception as e:
+        logger.exception(f"Error getting latest model date: {e}")
+        raise Exception(f"Error getting latest model date: {e}")
+
+
 def main():
-    date_today = datetime.now().strftime("%Y-%m-%d")
-    model_path = f"models/model/{date_today}/fall_detection_model.keras"
+    date = get_latest_model_date("models/model/")
+    model_path = f"models/model/{date}/fall_detection_model.keras"
     scaler_path = "models/scaler/scaler.pkl"
     data_path = "data/sample_cleaned/merged_data.csv"
+
     fp = FallPrediction(model_path, scaler_path, data_path)
+    fp.crop_data(fp.data)
     fp.predict_fall()
 
 
