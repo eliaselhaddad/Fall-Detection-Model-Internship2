@@ -37,10 +37,10 @@ from bleak import discover
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
-from src.models import Acceleration
+from src.gui.sequence_data_collection_gui import SequenceDataCollectionGui
+from src.models.Acceleration import Acceleration
 from src.gui.annotation import AnnotateAccelerometerData
 
-# from src.binary_parser import DataView
 
 SENSOR_ID = "223430000278"
 WRITE_CHARACTERISTIC_UUID = "34800001-7185-4d5d-b431-630e7050e8f0"
@@ -103,19 +103,6 @@ class DataView:
         ]:
             result.append(self.get_int_32(index))
         return result
-
-
-# @dataclasses.dataclass
-# class Acceleration:
-#     timestamp: int
-#     timestamp_local: str
-#     ax: float
-#     ay: float
-#     az: float
-#     fall_state: str
-
-#     def as_csv_field(self):
-#         return [self.timestamp, self.timestamp_local, self.ax, self.ay, self.az, self.fall_state]
 
 
 def save_as_csv():
@@ -192,7 +179,7 @@ async def run_ble_client(
             ax=d.get_float_32(6),
             ay=d.get_float_32(10),
             az=d.get_float_32(14),
-            fall_state=annotation.fall_state,
+            fall_state='0',
         )
         data_received_signal.emit(acc_data)
         # queue message for later consumption
@@ -251,14 +238,6 @@ async def run_ble_client(
         print("Sensor  ******" + end_of_serial, "not found!")
 
 
-# async def main(end_of_serial: str, data_received_signal: pyqtSignal):
-#     queue = asyncio.Queue()
-#     client_task = run_ble_client(end_of_serial, queue, data_received_signal)
-#     consumer_task = run_queue_consumer(queue)
-#     await asyncio.gather(client_task, consumer_task)
-#     logger.info("Main method done!")
-
-
 async def main(
     end_of_serial: str, data_received_signal: pyqtSignal, stop_signal: pyqtSignal
 ):
@@ -269,8 +248,6 @@ async def main(
     logger.info("Main method done!")
 
 
-# def run_asyncio_loop(end_of_serial: str):
-#     asyncio.run(main(end_of_serial=end_of_serial))
 class ThreadManager(QObject):
     data_received = pyqtSignal(Acceleration)
     stop_signal = pyqtSignal()
@@ -309,7 +286,7 @@ if __name__ == "__main__":
 
     thread_instance = ThreadManager()
 
-    annotation = AnnotateAccelerometerData()
+    annotation = SequenceDataCollectionGui()
 
     thread_instance.data_received.connect(annotation.on_data_received)
 

@@ -17,7 +17,7 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 from datetime import datetime
 
 # from acc_types import Acceleration
-from src.interfaces.models import Acceleration
+from src.models import Acceleration
 
 """Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
 
