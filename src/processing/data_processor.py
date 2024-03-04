@@ -78,39 +78,31 @@ class DataProcessor:
             raise e
 
 
-def setup_directories(use_sample=False):
-    PATH_TO_PROCESSED = "data/processed"
-    PATH_TO_RAW = "data/raw"
-
-    if use_sample:
+def setup_directories(folder):
+    if folder == "sample":
         PATH_TO_RAW = "data/sample_raw"
         PATH_TO_PROCESSED = "data/sample_processed"
-    else:
+    elif folder == "data":
         PATH_TO_RAW = "data/raw"
         PATH_TO_PROCESSED = "data/processed"
+    elif folder == "data2":
+        PATH_TO_RAW = "data2/raw"
+        PATH_TO_PROCESSED = "data2/processed"
+    else:
+        raise ValueError("Invalid folder name. Choose 'sample', 'data', or 'data2'.")
 
-    assert os.path.exists("data"), logger.error("Data directory does not exist")
-    assert os.path.exists("data/processed"), logger.error(
-        "Processed data directory does not exist"
-    )
-    assert os.path.exists("data/raw"), logger.error("Raw data directory does not exist")
-    assert os.path.exists("data/sample_raw"), logger.error(
-        "Sample raw data directory does not exist"
-    )
-    assert os.path.exists("data/sample_processed"), logger.error(
-        "Sample processed data directory does not exist"
-    )
-    if not os.path.exists(PATH_TO_PROCESSED):
-        logger.info(f"Creating processed data directory at {PATH_TO_PROCESSED}")
-        os.makedirs(PATH_TO_PROCESSED)
+    for path in [PATH_TO_RAW, PATH_TO_PROCESSED]:
+        if not os.path.exists(path):
+            logger.error(f"{path} directory does not exist")
+            raise FileNotFoundError(f"{path} directory does not exist")
 
     return PATH_TO_RAW, PATH_TO_PROCESSED
 
 
-def main(use_sample):
+def main(folder):
     logger.info("Starting data processing")
 
-    PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories(use_sample=use_sample)
+    PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories(folder=folder)
     data_processor = DataProcessor(PATH_TO_RAW, PATH_TO_PROCESSED)
 
     logger.info("Processing files")
@@ -121,9 +113,9 @@ def main(use_sample):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process raw data")
     parser.add_argument(
-        "--use_sample",
-        action="store_true",
-        help="Use sample data instead of full dataset",
+        "folder",
+        choices=["sample", "data", "data2"],
+        help="Specify the folder to process",
     )
     args = parser.parse_args()
-    main(args.use_sample)
+    main(args.folder)
