@@ -8,7 +8,7 @@ from loguru import logger
 
 from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
-from src.interfaces.models import Acceleration
+from src.models.acceleration import Acceleration
 
 
 class DataProcessor:

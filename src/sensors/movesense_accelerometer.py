@@ -38,8 +38,9 @@ from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
 from src.gui.sequence_data_collection_gui import SequenceDataCollectionGui
-from src.models.Acceleration import Acceleration
-from src.gui.annotation import AnnotateAccelerometerData
+from src.models.acceleration import Acceleration
+
+# from src.gui.annotation import AnnotateAccelerometerData
 
 
 SENSOR_ID = "223430000278"
@@ -179,7 +180,7 @@ async def run_ble_client(
             ax=d.get_float_32(6),
             ay=d.get_float_32(10),
             az=d.get_float_32(14),
-            fall_state='0',
+            fall_state="0",
         )
         # print(acc_data)
         data_received_signal.emit(acc_data)

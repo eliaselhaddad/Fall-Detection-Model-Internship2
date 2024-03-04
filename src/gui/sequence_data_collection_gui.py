@@ -12,14 +12,15 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QWidget,
     QVBoxLayout,
-    QGridLayout, QStatusBar,
+    QGridLayout,
+    QStatusBar,
 )
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 import time
-from src.models.Acceleration import Acceleration
+from src.models.acceleration import Acceleration
 
 """Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
 
@@ -35,7 +36,9 @@ class SequenceDataCollectionGui(QMainWindow):
         super().__init__()
         # This is what decides how many data points to collect before saving to csv
         self.data_sequence_length = 13 * 6
-        self.sequence_recording_type: SequenceCollectionTypes = SequenceCollectionTypes.no_sequence
+        self.sequence_recording_type: SequenceCollectionTypes = (
+            SequenceCollectionTypes.no_sequence
+        )
         self.accelerometer_data: [Acceleration] = []
 
         self.x_data = []
@@ -93,19 +96,19 @@ class SequenceDataCollectionGui(QMainWindow):
         self.setCentralWidget(plot_widget)
         layout = QVBoxLayout(plot_widget)
         self.figure, self.ax = plt.subplots()
-        self.line_x, = self.ax.plot([], [], 'b-', label='X')
-        self.line_y, = self.ax.plot([], [], 'g-', label='Y')
-        self.line_z, = self.ax.plot([], [], 'r-', label='Z')
+        (self.line_x,) = self.ax.plot([], [], "b-", label="X")
+        (self.line_y,) = self.ax.plot([], [], "g-", label="Y")
+        (self.line_z,) = self.ax.plot([], [], "r-", label="Z")
         self.ax.set_xlim(0, self.data_sequence_length)
         # Change this according to what max values there are for accelerometer data...
         self.ax.set_ylim(-100, 100)
-        self.ax.set_xlabel('Data Points')
-        self.ax.set_ylabel('Acceleration')
+        self.ax.set_xlabel("Data Points")
+        self.ax.set_ylabel("Acceleration")
 
         ax2 = self.ax.twinx()
         ax2.set_ylim(-1000000, 1000000)
-        ax2.set_ylabel('Jerk')
-        self.jerk_line, = ax2.plot([], [], 'orange', label='Jerk')
+        ax2.set_ylabel("Jerk")
+        (self.jerk_line,) = ax2.plot([], [], "orange", label="Jerk")
 
         layout.addWidget(self.figure.canvas)
         self.ax.legend()
@@ -145,14 +148,14 @@ class SequenceDataCollectionGui(QMainWindow):
             time_divisor = 1000
             df["time_interval"] /= time_divisor
             df["g_force"] = np.sqrt(df["ax"] ** 2 + df["ay"] ** 2 + df["az"] ** 2)
-            df["jerk"] = (df["g_force"].diff().fillna(9.8) / df["time_interval"])
+            df["jerk"] = df["g_force"].diff().fillna(9.8) / df["time_interval"]
             # Print the max value of the jerk column
             df.replace([np.inf, -np.inf], np.nan, inplace=True)
             df.dropna(subset=["jerk"], how="all", inplace=True)
             print(f"Max jerk value: {df['jerk'].max()}")
             print(f"Min jerk value: {df['jerk'].min()}")
 
-            return df['jerk'].tolist()
+            return df["jerk"].tolist()
 
     def fall_button_clicked(self):
         self.clear_plot()
@@ -179,7 +182,7 @@ class SequenceDataCollectionGui(QMainWindow):
 
     def on_data_received(self, acceleration: Acceleration):
         if len(self.accelerometer_data) == self.data_sequence_length:
-            print('stop recording')
+            print("stop recording")
             self.stop_sequence_recording()
 
         if self.sequence_recording_type != SequenceCollectionTypes.no_sequence:
@@ -229,7 +232,7 @@ class SequenceDataCollectionGui(QMainWindow):
             timestamp += pd.Timedelta(milliseconds=78)
             time_added = timestamp.isoformat()
 
-            acc = Acceleration(1, time_added, ax, ay, az, '0')
+            acc = Acceleration(1, time_added, ax, ay, az, "0")
             print(f"for loop iteration: {i}")
             self.on_data_received(acc)
             time.sleep(0.01)
