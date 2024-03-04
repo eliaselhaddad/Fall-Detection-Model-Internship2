@@ -59,9 +59,7 @@ class MotionFeatureCalculator:
 
     def calculate_jerk_orientation(self):
         logger.info("Calculating jerk and orientation")
-        self.df["jerk"] = (
-            self.df["g_force"].diff().fillna(9.8) / self.df["time_interval"]
-        )
+        self.df["jerk"] = self.df["g_force"].diff().fillna(0) / self.df["time_interval"]
         logger.info("Calculating orientation in xy")
         self.df["orientation_xy"] = np.degrees(np.arctan2(self.df["ay"], self.df["ax"]))
 

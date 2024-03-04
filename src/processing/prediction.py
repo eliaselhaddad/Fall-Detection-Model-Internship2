@@ -20,25 +20,39 @@ class FallPrediction:
         self.model = load_model(model_path)
         self.scaler_path = path_to_scaler
         self.model_helper = ModelHelpingFunctions()
-        self.df = pd.read_csv(path_to_data)
-        self.data = self.crop_data(self.df)
+        self.data = pd.read_csv(path_to_data)
+        # self.data = self.crop_data(self.df)
 
     def crop_data(self, data: pd.DataFrame):
         try:
             if "jerk" not in data.columns:
                 self.model_helper.log_error("Data does not contain 'jerk' column")
                 raise ValueError("Data does not contain 'jerk' column")
+
             max_jerk_index = data["jerk"].idxmax()
             self.model_helper.log_info(f"Max jerk index: {max_jerk_index}")
-            lines_before_max = max_jerk_index
-            percent_lines = int(lines_before_max * PERCENTAGE_LINES)
-            start_index = max(0, max_jerk_index - percent_lines)
-            self.model_helper.log_info(f"Start index: {start_index}")
-            end_index = min(len(data), max_jerk_index + END_INDEX)
-            self.model_helper.log_info(f"End index: {end_index}")
 
-            cropped_data = data.iloc[start_index:end_index]
-            return cropped_data
+            configurations = [
+                (50, 49),
+                (40, 59),
+                (30, 69),
+                (20, 79),
+                (60, 39),
+                (70, 29),
+                (80, 19),
+            ]
+            cropped_datasets = []
+
+            for left, right in configurations:
+                logger.info(f"Left: {left}, Right: {right}")
+                start_index = max(0, max_jerk_index - left)
+                end_index = min(len(data), max_jerk_index + right)
+                logger.info(f"Start index: {start_index}, End index: {end_index}")
+                cropped_data = data.iloc[start_index:end_index]
+                cropped_datasets.append(cropped_data)
+
+            return cropped_datasets
+
         except Exception as e:
             self.model_helper.log_exception(f"Error cropping data: {e}")
             raise Exception(f"Error cropping data: {e}")
@@ -82,7 +96,7 @@ class FallPrediction:
             self.model_helper.log_info("Padding data")
             data = self.convert_to_numpy()
             self.data = pad_sequences(
-                [data], maxlen=1339, dtype="float32", padding="post", truncating="post"
+                [data], maxlen=198, dtype="float32", padding="post", truncating="post"
             )
             return self.data
         except Exception as e:
@@ -157,14 +171,30 @@ def get_latest_model_date(directory_path):
         raise Exception(f"Error getting latest model date: {e}")
 
 
+# def main():
+#     date = get_latest_model_date("models/model/")
+#     model_path = f"models/model/{date}/fall_detection_model.keras"
+#     scaler_path = "models/scaler/scaler.pkl"
+#     data_path = "data/sample_cleaned/merged_data.csv"
+
+#     fp = FallPrediction(model_path, scaler_path, data_path)
+#     cropped_datasets = fp.crop_data(fp.df)
+#     # fp.crop_data(fp.data)
+#     # fp.predict_fall()
+
+#     for cropped_data in cropped_datasets:
+#         fp.data = cropped_data  # Update the data attribute with each cropped dataset
+#         fp.predict_fall()
+
+
 def main():
     date = get_latest_model_date("models/model/")
     model_path = f"models/model/{date}/fall_detection_model.keras"
-    scaler_path = "models/scaler/scaler.pkl"
+    scaler_path = "models/scaler2/scaler.pkl"
     data_path = "data/sample_cleaned/merged_data.csv"
 
     fp = FallPrediction(model_path, scaler_path, data_path)
-    fp.crop_data(fp.data)
+    # fp.crop_data(fp.data)
     fp.predict_fall()
 
 
