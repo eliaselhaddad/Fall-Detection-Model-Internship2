@@ -33,6 +33,7 @@ class SequenceCollectionTypes(Enum):
 class SequenceDataCollectionGui(QMainWindow):
     def __init__(self):
         super().__init__()
+        # This is what decides how many data points to collect before saving to csv
         self.data_sequence_length = 13 * 6
         self.sequence_recording_type: SequenceCollectionTypes = SequenceCollectionTypes.no_sequence
         self.accelerometer_data: [Acceleration] = []
@@ -40,7 +41,7 @@ class SequenceDataCollectionGui(QMainWindow):
         self.x_data = []
         self.y_data = []
         self.z_data = []
-        self.jerk_data = []
+        self.jerk_data = [[]]
         self.line_x = None
         self.line_y = None
         self.line_z = None
@@ -65,23 +66,23 @@ class SequenceDataCollectionGui(QMainWindow):
         button_layout.addWidget(self.progress_bar, 1, 0, 1, 2)
         button_layout.addWidget(self.status_bar, 2, 0, 2, 2)
 
-        fall_button = QPushButton("Record fall sequence", self)
-        fall_button.setStyleSheet(
+        self.fall_button = QPushButton("Record fall sequence", self)
+        self.fall_button.setStyleSheet(
             "QPushButton { padding: 10px; font-size: 18px; background-color: green; color: white;}"
         )
 
-        fall_button.adjustSize()
+        self.fall_button.adjustSize()
         # fall_button.clicked(self.fall_button_clicked)
-        fall_button.clicked.connect(self.fall_button_clicked)
-        button_layout.addWidget(fall_button, 0, 0)
+        self.fall_button.clicked.connect(self.fall_button_clicked)
+        button_layout.addWidget(self.fall_button, 0, 0)
 
-        not_fall_button = QPushButton("Record non fall sequence", self)
-        not_fall_button.setStyleSheet(
+        self.not_fall_button = QPushButton("Record non fall sequence", self)
+        self.not_fall_button.setStyleSheet(
             "QPushButton { padding: 10px; font-size: 18px; background-color: red; color: white;}"
         )
-        not_fall_button.adjustSize()
-        not_fall_button.clicked.connect(self.not_fall_button_clicked)
-        button_layout.addWidget(not_fall_button, 0, 1)
+        self.not_fall_button.adjustSize()
+        self.not_fall_button.clicked.connect(self.not_fall_button_clicked)
+        button_layout.addWidget(self.not_fall_button, 0, 1)
         button_layout.setColumnStretch(0, 1)
         button_layout.setColumnStretch(1, 1)
 
@@ -97,12 +98,12 @@ class SequenceDataCollectionGui(QMainWindow):
         self.line_z, = self.ax.plot([], [], 'r-', label='Z')
         self.ax.set_xlim(0, self.data_sequence_length)
         # Change this according to what max values there are for accelerometer data...
-        self.ax.set_ylim(-10, 50)
+        self.ax.set_ylim(-100, 100)
         self.ax.set_xlabel('Data Points')
         self.ax.set_ylabel('Acceleration')
 
         ax2 = self.ax.twinx()
-        ax2.set_ylim(-50000, 150000)
+        ax2.set_ylim(-1000000, 1000000)
         ax2.set_ylabel('Jerk')
         self.jerk_line, = ax2.plot([], [], 'orange', label='Jerk')
 
@@ -111,7 +112,6 @@ class SequenceDataCollectionGui(QMainWindow):
         return layout
 
     def update_plot(self, acceleration: Acceleration = None):
-        print(f"Updating plot with acceleration: {acceleration}")
         if acceleration is not None:
             self.x_data.append(acceleration.ax)
             self.y_data.append(acceleration.ay)
@@ -121,8 +121,6 @@ class SequenceDataCollectionGui(QMainWindow):
             self.jerk_data.append(self.calculate_jerk(self.accelerometer_data))
             self.jerk_line.set_xdata(range(len(self.jerk_data[0])))
             self.jerk_line.set_ydata(self.jerk_data[0])
-            print('plotting jerk')
-            print('jerkdatalenght', len(self.jerk_data[0]))
 
         self.line_x.set_xdata(range(len(self.x_data)))
         self.line_x.set_ydata(self.x_data)
@@ -136,31 +134,37 @@ class SequenceDataCollectionGui(QMainWindow):
 
     @staticmethod
     def calculate_jerk(accelerations: [Acceleration]) -> [float]:
-        dicts = [asdict(acceleration) for acceleration in accelerations]
-        df = pd.DataFrame(dicts)
-        df["timestamp_local"] = pd.to_datetime(df["timestamp_local"])
-        df["time_interval"] = (
-            df["timestamp_local"].diff().fillna(pd.Timedelta(seconds=0))
-        )
-        df["time_interval"] = df["time_interval"].dt.total_seconds()
-        time_divisor = 1000
-        df["time_interval"] /= time_divisor
-        df["g_force"] = np.sqrt(df["ax"] ** 2 + df["ay"] ** 2 + df["az"] ** 2)
-        df["jerk"] = (df["g_force"].diff().fillna(9.8) / df["time_interval"])
-        print(df['jerk'])
-        return df['jerk'].tolist()
+        if accelerations is not None and len(accelerations) > 1:
+            dicts = [asdict(acceleration) for acceleration in accelerations]
+            df = pd.DataFrame(dicts)
+            df["timestamp_local"] = pd.to_datetime(df["timestamp_local"])
+            df["time_interval"] = (
+                df["timestamp_local"].diff().fillna(pd.Timedelta(seconds=0))
+            )
+            df["time_interval"] = df["time_interval"].dt.total_seconds()
+            time_divisor = 1000
+            df["time_interval"] /= time_divisor
+            df["g_force"] = np.sqrt(df["ax"] ** 2 + df["ay"] ** 2 + df["az"] ** 2)
+            df["jerk"] = (df["g_force"].diff().fillna(9.8) / df["time_interval"])
+            # Print the max value of the jerk column
+            df.replace([np.inf, -np.inf], np.nan, inplace=True)
+            df.dropna(subset=["jerk"], how="all", inplace=True)
+            print(f"Max jerk value: {df['jerk'].max()}")
+            print(f"Min jerk value: {df['jerk'].min()}")
+
+            return df['jerk'].tolist()
 
     def fall_button_clicked(self):
         self.clear_plot()
         self.sequence_recording_type = SequenceCollectionTypes.fall_sequence
         print(f"Recording {self.sequence_recording_type.name}")
-        self.send_fake_data()
+        self.fall_button.setEnabled(False)
 
     def not_fall_button_clicked(self):
         self.clear_plot()
         self.sequence_recording_type = SequenceCollectionTypes.non_fall_sequence
         print(f"Recording {self.sequence_recording_type.name}")
-        self.send_fake_data()
+        self.not_fall_button.setEnabled(False)
 
     def stop_sequence_recording(self):
         timestamp = datetime.now().isoformat().replace(":", "-")
@@ -170,6 +174,8 @@ class SequenceDataCollectionGui(QMainWindow):
         self.progress_bar.reset()
         self.sequence_recording_type = SequenceCollectionTypes.no_sequence
         self.status_bar.showMessage(f"Saved file {file_name}", 5000)
+        self.fall_button.setEnabled(True)
+        self.not_fall_button.setEnabled(True)
 
     def on_data_received(self, acceleration: Acceleration):
         if len(self.accelerometer_data) == self.data_sequence_length:
@@ -187,6 +193,9 @@ class SequenceDataCollectionGui(QMainWindow):
         self.x_data.clear()
         self.y_data.clear()
         self.z_data.clear()
+        self.jerk_data.clear()
+        self.jerk_line.set_xdata(range(len(self.jerk_data)))
+        self.jerk_line.set_ydata(self.jerk_data)
         self.update_plot()
 
     def save_as_csv(self, file_name: str):

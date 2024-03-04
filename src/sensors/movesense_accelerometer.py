@@ -181,6 +181,7 @@ async def run_ble_client(
             az=d.get_float_32(14),
             fall_state='0',
         )
+        # print(acc_data)
         data_received_signal.emit(acc_data)
         # queue message for later consumption
         await queue.put(acc_data)
