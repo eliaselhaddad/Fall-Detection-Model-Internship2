@@ -96,7 +96,7 @@ class FallPrediction:
             self.model_helper.log_info("Padding data")
             data = self.convert_to_numpy()
             self.data = pad_sequences(
-                [data], maxlen=198, dtype="float32", padding="post", truncating="post"
+                [data], maxlen=106, dtype="float32", padding="post", truncating="post"
             )
             return self.data
         except Exception as e:
