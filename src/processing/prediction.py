@@ -14,7 +14,12 @@ END_INDEX = 40
 MIN_DATA_SIZE = 20
 PROBABILTY_THRESHOLD = 0.5
 
-
+"""
+1. Variablerna ovan kan egentligen ligga som klassvariabler i klassen FallPrediction (och vara lowercase)
+2. Sätt ordningen på funktionerna i klassen i den ordning de används, så blir det lättare att läsa
+3. Typning i fattas på många ställen
+4. Se kommentarer i koden
+"""
 class FallPrediction:
     def __init__(self, model_path, path_to_scaler, path_to_data):
         self.model = load_model(model_path)
@@ -71,6 +76,8 @@ class FallPrediction:
         try:
             self.model_helper.log_info(f"Loading scaler from {scaler_path}")
             with open(scaler_path, "rb") as file:
+                # Här defineras self.scaler utanför init, du bör definera den i init till None isåfall, sedan
+                # Assigna värdet här
                 self.scaler = joblib.load(file)
             return self.scaler
         except FileNotFoundError as e:

@@ -10,7 +10,9 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )  # Log messages will include the time at which the message was logged, the log level, and the message itself.
 
-
+"""
+Sätt ordningen på funktionerna i klassen i den ordning de används, så blir det lättare att läsa
+"""
 class CSVFilesMerger:
     """
     The class is designed to:

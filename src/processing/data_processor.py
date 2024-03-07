@@ -11,7 +11,16 @@ from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
 from src.models.acceleration import Acceleration
 
+"""
+Som jag förstår det så används DataProcessor och sedan också data_processor_2.py för att processa data från en mapp
+Du bör döpa åtminstone (...)_2 till något mer beskrivande så man förstår varför den ska användas också och vad den gör.
 
+1. Glöm inte typning på funktioner och variabler
+2. Sätt gärna funktionsordningen i klassen i klassen de används, t exså körs process_file först, lägg den direkt under init
+Sedan is_already_processed, osv -> ökar läsbarheten och gör det lättare att förstå vad som händer
+3. Sätt lowercase på variabler
+4. Se kommentarer i koden längre ned.
+"""
 class DataProcessor:
     def __init__(self, raw, processed):
         self.raw = Path(raw)
@@ -32,9 +41,15 @@ class DataProcessor:
 
     def process_data(self, data, filename):
         try:
+            # Här skapar vi en ny instans av DataValidator och MotionFeatureCalculator för varje fil, vilket är onödigt
+            # Då koden blir långsammare, tar mer minne etc. Det räcker med att skapa en instans av varje klass och istället
+            # För att i konstruktorn skicka in data och kolumner, skicka in det i DataValidator().validate(data, columns)
+            # Då binds inte instansen till en specifik fil och kan användas för flera filer
             validated_data = DataValidator(
                 data, required_accelerator_columns=self.required_accelerometer_columns
             ).validate()
+            # Samma här, istället för att skapa en ny instans av MotionFeatureCalculator för varje fil, skicka in data och kolumner
+            # I funktionen calculate_all_features()
             motion_feature_calculator = MotionFeatureCalculator(
                 validated_data, "timestamp", ["ax", "ay", "az"]
             )
@@ -101,7 +116,7 @@ def setup_directories(folder):
 
 def main(folder):
     logger.info("Starting data processing")
-
+    # Sätt lowercase på dessa variabler
     PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories(folder=folder)
     data_processor = DataProcessor(PATH_TO_RAW, PATH_TO_PROCESSED)
 

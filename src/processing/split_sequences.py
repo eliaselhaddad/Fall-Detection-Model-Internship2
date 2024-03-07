@@ -4,9 +4,16 @@ import pandas as pd
 
 from src.helper_functions.model_helper_functions import ModelHelpingFunctions
 
-
+"""
+1. Sätt ordningen på funktionerna i klassen i den ordning de används, så blir det lättare att läsa
+2. Typning i fattas på många ställen
+3. Se kommentarer i koden
+"""
 class SplitSequences:
     def __init__(self, filepath, output_directory):
+        # Här assignar vi self.data en gång, sedan redan efter direkt
+        # Kanske ska assigna data = pd.read_csv(filepath) och sedan self.data = data
+        # Vad är det för data förresten? -> Döp den gärna till något mer beskrivande
         self.data = pd.read_csv(filepath)
         self.data = self.data[self.data["fall_state"].isin([0, 1])]
         self.output_directory = output_directory
@@ -20,6 +27,8 @@ class SplitSequences:
         try:
             self.model_helper.log_info(f"Processing sequence at index {i}")
             if current_state != previous_state:
+                # Deklarera denna i init
+                # sätt sedan värde som du gör här
                 self.end_index = i
                 if previous_state == 1:
                     self.save_sequence(self.start_index, self.end_index, True)
@@ -30,7 +39,9 @@ class SplitSequences:
                 self.start_index = i
 
             if current_state == 1 and not self.in_fall_sequence:
+                # Deklarera denna i init, sedan kan du sätta värdet här precis som du gör
                 self.in_fall_sequence = True
+                # Samma gäller denna :)
                 self.start_index = i
         except Exception as e:
             self.model_helper.log_error(e)
@@ -40,6 +51,8 @@ class SplitSequences:
             self.model_helper.log_info(
                 "Splitting CSV files into sequences of falls and non-falls"
             )
+            # Dessa deklareras som self.start_index och self.in_fall_sequence i process_sequence
+            # Är de tänkt att användas på samma sätt? Om ja, deklarera dem i init och assigna värdet till self.(...)
             start_index = 0
             in_fall_sequence = False
 
@@ -59,6 +72,10 @@ class SplitSequences:
         except Exception as e:
             self.model_helper.log_exception(e)
 
+    # Denna funktion heter save_sequence, men majoriteten av koden gör ganska mycket annat,
+    # Bryt gärna ut dessa delar till egna funktioner, förklarar längre ned.
+    # Funktionen bör nog heta något annat än save_sequence, så kan du bryta ut save-delarna längst ned
+    # I en egen funktion och kalla på den i slutet.
     def save_sequence(self, start_index, end_index, is_fall):
         try:
             self.model_helper.log_info("Saving sequence")
@@ -66,8 +83,14 @@ class SplitSequences:
             if is_fall:
                 fall_sequence = self.data.iloc[start_index:end_index]
                 fall_indices = fall_sequence["fall_state"] == 1
-
+                # Här kan du vända på logiken dvs if !fall_indices.any() -> return
+                # då slipper du ha en else-sats
                 if fall_indices.any():
+                    # Koden i denna sats bör ligga i en egen funktion, lättare att hänga med då
+                    # Delvis kan du förklara med funktionsnamnet vad som händer
+                    # Men funktionen blir också kortare och lättare att förstå
+                    # Kanske till och med så ska du bryta ut flera mindre delar av denna logik till egna funktioner
+                    # Men det är upp till dig, lite svårt att hänga med exakt vad som händer
                     fall_start_index = fall_sequence[fall_indices].index[0]
                     fall_end_index = fall_sequence[fall_indices].index[-1]
 

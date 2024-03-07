@@ -15,7 +15,20 @@ from src.helper_functions.model_helper_functions import (
 )
 from src.processing.split_sequences import SplitSequences
 
+"""
+1. Jag tänker en klass som denna är egentligen en rad av funktioner som körs i en viss ordning, alltid.
+Dvs för att träna måste du förbereda datan, splitta, skala, träna osv - allt i en viss ordning.
+Därför borde du ha en funktion som egentligen gör allt detta, och sedan kalla på den i main.
+Exempelvis:
+def main():
+    model_training = ModelTraining()
+    model_training.train_model()
 
+För skulle man köra den här klassen utanför mainmetoden så behöver man veta väldigt mycket om klassen och hur den 
+fungerar för att kunna använda den. Har du istället en funktion som håller koll på detta så behöver användaren egentligen
+inte veta särskilt mycket om hur klassen funkar, utan kan bara kalla på funktionen och få resultatet.
+https://refactoring.guru/design-patterns/facade om du vill läsa mer om detta, kallas för en facade pattern
+"""
 class ModelTraining:
     def __init__(self):
         self.model_helper = ModelHelpingFunctions()
