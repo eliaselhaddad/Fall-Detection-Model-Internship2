@@ -26,13 +26,13 @@ Run
 
 Due to complications with python modules:
  - run for example:
-    - python -m src.processing.data_processor
+    - python -m src.processing.source_all_processor
 
 
 To process and predict sample data:
 - Place data in data/sample_raw
 - Use --use_sample tag
-    - python -m src.processing.data_processor --use_sample
+    - python -m src.processing.source_all_processor --use_sample
     - python -m src.processing.merge_csv_files --use_sample
     - python -m src.processing.prediction
 
@@ -40,12 +40,12 @@ To process and predict sample data:
 
 - Due to the existence of two data sources the data processing has varied input sources
 - First
-    - python -m src.processing.data_processor
+    - python -m src.processing.source_all_processor
         - will process all the data avalaible from both sources
 - Then
     - python -m src.processing.split_sequences
         - This will only split sequences from data source 1. The initial data we had from our data collection
-    - python -m src.processing.data_processor_2
+    - python -m src.processing.source_b_preprocessor
         - Will do an additional processing on the data source 2 which is the new data we have collected
 - Finally
     - Train the model
@@ -63,6 +63,6 @@ To process and predict sample data:
 
                     -> merge_csv_files (data1 is default) -> split_sequences (data1 is default)   ->
                data
-data_processor ->                                                                                       -> model_training
+source_all_processor  ->                                                                                       -> model_training
                data2
-                    -> data_processor_2 (data2) ->      ->       ->       ->      ->      ->      ->
+                    -> source_b_processor (data2) ->      ->       ->       ->      ->      ->      ->

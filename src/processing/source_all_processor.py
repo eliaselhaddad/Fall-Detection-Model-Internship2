@@ -21,53 +21,19 @@ Sedan is_already_processed, osv -> ökar läsbarheten och gör det lättare att 
 3. Sätt lowercase på variabler
 4. Se kommentarer i koden längre ned.
 """
+
+
 class DataProcessor:
-    def __init__(self, raw, processed):
+    def __init__(self, raw: str, processed: str):
         self.raw = Path(raw)
         self.processed = Path(processed)
         self.required_accelerometer_columns = [
             field.name for field in dataclasses.fields(Acceleration)
         ]
+        self.data_validator = DataValidator()
+        self.motion_feature_calculator = MotionFeatureCalculator()
 
-    def load_data(self, filename):
-        logger.info(f"Loading data from {filename}")
-        file_path = self.raw / filename
-        if file_path.exists():
-            logger.info(f"File found at {file_path}")
-            return pd.read_csv(file_path)
-        else:
-            logger.error(f"No file found at {file_path}")
-            raise FileNotFoundError(f"No file found at {file_path}")
-
-    def process_data(self, data, filename):
-        try:
-            # Här skapar vi en ny instans av DataValidator och MotionFeatureCalculator för varje fil, vilket är onödigt
-            # Då koden blir långsammare, tar mer minne etc. Det räcker med att skapa en instans av varje klass och istället
-            # För att i konstruktorn skicka in data och kolumner, skicka in det i DataValidator().validate(data, columns)
-            # Då binds inte instansen till en specifik fil och kan användas för flera filer
-            validated_data = DataValidator(
-                data, required_accelerator_columns=self.required_accelerometer_columns
-            ).validate()
-            # Samma här, istället för att skapa en ny instans av MotionFeatureCalculator för varje fil, skicka in data och kolumner
-            # I funktionen calculate_all_features()
-            motion_feature_calculator = MotionFeatureCalculator(
-                validated_data, "timestamp", ["ax", "ay", "az"]
-            )
-
-            logger.info("Processing data")
-            processed_data = motion_feature_calculator.calculate_all_features()
-            logger.info("Data processed")
-        except Exception as e:
-            logger.error(f"Error processing data: {e}")
-            raise e
-        return processed_data
-
-    def is_already_processed(self, file):
-        processed_file_name = f"processed_{file}"
-        processed_file_path = self.processed / processed_file_name
-        return processed_file_path.exists()
-
-    def process_file(self, file):
+    def process_file(self, file: str) -> None:
         if self.is_already_processed(file):
             logger.info(f"File {file} already processed. Skipping...")
             return
@@ -82,7 +48,38 @@ class DataProcessor:
         except Exception as e:
             logger.error(f"Error processing file: {e}")
 
-    def save_data(self, data, filename):
+    def is_already_processed(self, file: str) -> bool:
+        processed_file_name = f"processed_{file}"
+        processed_file_path = self.processed / processed_file_name
+        return processed_file_path.exists()
+
+    def load_data(self, filename: str) -> pd.DataFrame:
+        logger.info(f"Loading data from {filename}")
+        file_path = self.raw / filename
+        if file_path.exists():
+            logger.info(f"File found at {file_path}")
+            return pd.read_csv(file_path)
+        else:
+            logger.error(f"No file found at {file_path}")
+            raise FileNotFoundError(f"No file found at {file_path}")
+
+    def process_data(self, data: pd.DataFrame, file: str) -> pd.DataFrame:
+        try:
+            logger.info(f"Validating data from {file}")
+            validated_data = self.data_validator.validate(
+                data, self.required_accelerometer_columns
+            )
+            logger.info("Processing data")
+            processed_data = self.motion_feature_calculator.calculate_all_features(
+                validated_data, "timestamp", ["ax", "ay", "az"]
+            )
+            logger.info("Data processed")
+        except Exception as e:
+            logger.error(f"Error processing data: {e}")
+            raise e
+        return processed_data
+
+    def save_data(self, data: pd.DataFrame, filename: str) -> None:
         try:
             logger.info(f"Saving data to {filename}")
             save_path = self.processed / filename
@@ -95,33 +92,32 @@ class DataProcessor:
 
 def setup_directories(folder):
     if folder == "sample":
-        PATH_TO_RAW = "data/sample_raw"
-        PATH_TO_PROCESSED = "data/sample_processed"
+        path_to_raw = "data/sample_raw"
+        path_to_processed = "data/sample_processed"
     elif folder == "data":
-        PATH_TO_RAW = "data/raw"
-        PATH_TO_PROCESSED = "data/processed"
+        path_to_raw = "data/raw"
+        path_to_processed = "data/processed"
     elif folder == "data2":
-        PATH_TO_RAW = "data2/raw"
-        PATH_TO_PROCESSED = "data2/processed"
+        path_to_raw = "data2/raw"
+        path_to_processed = "data2/processed"
     else:
         raise ValueError("Invalid folder name. Choose 'sample', 'data', or 'data2'.")
 
-    for path in [PATH_TO_RAW, PATH_TO_PROCESSED]:
+    for path in [path_to_raw, path_to_processed]:
         if not os.path.exists(path):
             logger.error(f"{path} directory does not exist")
             raise FileNotFoundError(f"{path} directory does not exist")
 
-    return PATH_TO_RAW, PATH_TO_PROCESSED
+    return path_to_raw, path_to_processed
 
 
 def main(folder):
     logger.info("Starting data processing")
-    # Sätt lowercase på dessa variabler
-    PATH_TO_RAW, PATH_TO_PROCESSED = setup_directories(folder=folder)
-    data_processor = DataProcessor(PATH_TO_RAW, PATH_TO_PROCESSED)
+    path_to_raw, path_to_processed = setup_directories(folder=folder)
+    data_processor = DataProcessor(path_to_raw, path_to_processed)
 
     logger.info("Processing files")
-    for file in os.listdir(PATH_TO_RAW):
+    for file in os.listdir(path_to_raw):
         data_processor.process_file(file)
 
 

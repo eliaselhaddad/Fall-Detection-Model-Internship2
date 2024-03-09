@@ -15,20 +15,7 @@ from src.helper_functions.model_helper_functions import (
 )
 from src.processing.split_sequences import SplitSequences
 
-"""
-1. Jag tänker en klass som denna är egentligen en rad av funktioner som körs i en viss ordning, alltid.
-Dvs för att träna måste du förbereda datan, splitta, skala, träna osv - allt i en viss ordning.
-Därför borde du ha en funktion som egentligen gör allt detta, och sedan kalla på den i main.
-Exempelvis:
-def main():
-    model_training = ModelTraining()
-    model_training.train_model()
 
-För skulle man köra den här klassen utanför mainmetoden så behöver man veta väldigt mycket om klassen och hur den 
-fungerar för att kunna använda den. Har du istället en funktion som håller koll på detta så behöver användaren egentligen
-inte veta särskilt mycket om hur klassen funkar, utan kan bara kalla på funktionen och få resultatet.
-https://refactoring.guru/design-patterns/facade om du vill läsa mer om detta, kallas för en facade pattern
-"""
 class ModelTraining:
     def __init__(self):
         self.model_helper = ModelHelpingFunctions()
@@ -176,7 +163,6 @@ class ModelTraining:
                     filters=128,
                     kernel_size=5,
                     activation="relu",
-                    # input_shape=input_shape,
                 ),
                 tf.keras.layers.MaxPooling1D(pool_size=2),
                 tf.keras.layers.Conv1D(filters=320, kernel_size=2, activation="relu"),
@@ -213,7 +199,7 @@ class ModelTraining:
                 np.array(train_labels),
                 epochs=100,
                 validation_data=(val_sequences, np.array(val_labels)),
-                callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)],
+                callbacks=[tf.keras.callbacks.EarlyStopping(patience=6)],
                 shuffle=True,
             )
 
@@ -247,32 +233,33 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error saving model: {e}")
 
+    def start(self):
+        fall_data, non_fall_data = self.load_data()
+        fall_labels, non_fall_labels = self.prepare_labels(fall_data, non_fall_data)
+        all_sequences = list(fall_data) + list(non_fall_data)
+        all_labels = fall_labels + non_fall_labels
+        padded_sequences = self.pad_sequences(all_sequences)
+
+        scaled_sequences = self.scale_sequences(padded_sequences)
+        (
+            train_sequences,
+            val_sequences,
+            test_sequences,
+            train_labels,
+            val_labels,
+            test_labels,
+        ) = self.prep_train_val_test_data(scaled_sequences, all_labels)
+        model = self.create_model(train_sequences[0].shape)
+        history = self.train_model(
+            model, train_sequences, train_labels, val_sequences, val_labels
+        )
+        self.evaluate_model(model, test_sequences, test_labels)
+        self.save_model(model)
+
 
 def main():
     model_training = ModelTraining()
-    fall_data, non_fall_data = model_training.load_data()
-    fall_labels, non_fall_labels = model_training.prepare_labels(
-        fall_data, non_fall_data
-    )
-    all_sequences = list(fall_data) + list(non_fall_data)
-    all_labels = fall_labels + non_fall_labels
-    padded_sequences = model_training.pad_sequences(all_sequences)
-
-    scaled_sequences = model_training.scale_sequences(padded_sequences)
-    (
-        train_sequences,
-        val_sequences,
-        test_sequences,
-        train_labels,
-        val_labels,
-        test_labels,
-    ) = model_training.prep_train_val_test_data(scaled_sequences, all_labels)
-    model = model_training.create_model(train_sequences[0].shape)
-    history = model_training.train_model(
-        model, train_sequences, train_labels, val_sequences, val_labels
-    )
-    model_training.evaluate_model(model, test_sequences, test_labels)
-    model_training.save_model(model)
+    model_training.start()
 
 
 if __name__ == "__main__":

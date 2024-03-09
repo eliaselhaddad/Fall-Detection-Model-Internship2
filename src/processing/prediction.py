@@ -9,10 +9,6 @@ from loguru import logger
 
 from src.helper_functions.model_helper_functions import ModelHelpingFunctions
 
-PERCENTAGE_LINES = 0.75
-END_INDEX = 40
-MIN_DATA_SIZE = 20
-PROBABILTY_THRESHOLD = 0.5
 
 """
 1. Variablerna ovan kan egentligen ligga som klassvariabler i klassen FallPrediction (och vara lowercase)
@@ -20,12 +16,26 @@ PROBABILTY_THRESHOLD = 0.5
 3. Typning i fattas på många ställen
 4. Se kommentarer i koden
 """
+
+
 class FallPrediction:
     def __init__(self, model_path, path_to_scaler, path_to_data):
         self.model = load_model(model_path)
         self.scaler_path = path_to_scaler
         self.model_helper = ModelHelpingFunctions()
         self.data = pd.read_csv(path_to_data)
+        self.minimun_data_size = 50
+        self.probability_threshold = 0.5
+        self.configurations = [
+            (50, 49),
+            (40, 59),
+            (30, 69),
+            (20, 79),
+            (60, 39),
+            (70, 29),
+            (80, 19),
+        ]
+        self.scaler = None
         # self.data = self.crop_data(self.df)
 
     def crop_data(self, data: pd.DataFrame):
@@ -37,18 +47,9 @@ class FallPrediction:
             max_jerk_index = data["jerk"].idxmax()
             self.model_helper.log_info(f"Max jerk index: {max_jerk_index}")
 
-            configurations = [
-                (50, 49),
-                (40, 59),
-                (30, 69),
-                (20, 79),
-                (60, 39),
-                (70, 29),
-                (80, 19),
-            ]
             cropped_datasets = []
 
-            for left, right in configurations:
+            for left, right in self.configurations:
                 logger.info(f"Left: {left}, Right: {right}")
                 start_index = max(0, max_jerk_index - left)
                 end_index = min(len(data), max_jerk_index + right)
@@ -62,7 +63,7 @@ class FallPrediction:
             self.model_helper.log_exception(f"Error cropping data: {e}")
             raise Exception(f"Error cropping data: {e}")
 
-    def check_data_size(self, min_size=MIN_DATA_SIZE):
+    def check_data_size(self, min_size):
         if len(self.data) < min_size:
             self.model_helper.log_error(
                 f"Data length is less than {min_size} required for prediction"
@@ -76,8 +77,6 @@ class FallPrediction:
         try:
             self.model_helper.log_info(f"Loading scaler from {scaler_path}")
             with open(scaler_path, "rb") as file:
-                # Här defineras self.scaler utanför init, du bör definera den i init till None isåfall, sedan
-                # Assigna värdet här
                 self.scaler = joblib.load(file)
             return self.scaler
         except FileNotFoundError as e:
@@ -103,7 +102,7 @@ class FallPrediction:
             self.model_helper.log_info("Padding data")
             data = self.convert_to_numpy()
             self.data = pad_sequences(
-                [data], maxlen=106, dtype="float32", padding="post", truncating="post"
+                [data], maxlen=109, dtype="float32", padding="post", truncating="post"
             )
             return self.data
         except Exception as e:
@@ -134,13 +133,13 @@ class FallPrediction:
             raise Exception(f"Error predicting: {e}")
 
     def predict_fall(self):
-        self.check_data_size()
+        self.check_data_size(self.minimun_data_size)
 
         try:
             prediction = self.predict()
             probability = prediction[0][0]
 
-            if probability > PROBABILTY_THRESHOLD:
+            if probability > self.probability_threshold:
                 self.model_helper.log_warning(
                     f"Fall detected with probability: {probability}"
                 )
