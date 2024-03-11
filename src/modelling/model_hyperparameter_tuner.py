@@ -21,8 +21,8 @@ class ModelHyperparameterTuner(HyperModel):
         self.project_name = "fall_detection"
         self.directory = "tuner_dir"
         self.objective = "val_accuracy"
-        self.patience = 6
-        self.max_trials = 50
+        self.patience = 7
+        self.max_trials = 30
         self.model_helper = ModelHelpingFunctions()
         self.model_utilities = ModelUtilities()
         self.input_shape = None

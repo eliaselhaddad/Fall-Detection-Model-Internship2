@@ -10,22 +10,15 @@ from loguru import logger
 from src.helper_functions.model_helper_functions import ModelHelpingFunctions
 
 
-"""
-1. Variablerna ovan kan egentligen ligga som klassvariabler i klassen FallPrediction (och vara lowercase)
-2. Sätt ordningen på funktionerna i klassen i den ordning de används, så blir det lättare att läsa
-3. Typning i fattas på många ställen
-4. Se kommentarer i koden
-"""
-
-
 class FallPrediction:
-    def __init__(self, model_path, path_to_scaler, path_to_data):
+    def __init__(self, model_path: str, path_to_scaler: str, path_to_data: str):
         self.model = load_model(model_path)
         self.scaler_path = path_to_scaler
         self.model_helper = ModelHelpingFunctions()
         self.data = pd.read_csv(path_to_data)
         self.minimun_data_size = 50
         self.probability_threshold = 0.5
+        self.padding_size = 108
         self.configurations = [
             (50, 49),
             (40, 59),
@@ -102,7 +95,11 @@ class FallPrediction:
             self.model_helper.log_info("Padding data")
             data = self.convert_to_numpy()
             self.data = pad_sequences(
-                [data], maxlen=109, dtype="float32", padding="post", truncating="post"
+                [data],
+                maxlen=self.padding_size,
+                dtype="float32",
+                padding="post",
+                truncating="post",
             )
             return self.data
         except Exception as e:
