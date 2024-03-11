@@ -13,6 +13,8 @@ logging.basicConfig(
 """
 Sätt ordningen på funktionerna i klassen i den ordning de används, så blir det lättare att läsa
 """
+
+
 class CSVFilesMerger:
     """
     The class is designed to:
