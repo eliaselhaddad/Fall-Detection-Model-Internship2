@@ -13,18 +13,23 @@ class DataValidator:
     ) -> pd.DataFrame:
         self._check_all_columns(data, required_accelerator_columns)
         self._check_null_values(data)
-        self._check_duplicated_rows()
-        self._drop_timestamp()
-        self._rename_timestamp_local()
-        return self.data
+        self._check_duplicated_rows(data)
+        self._drop_timestamp(data)
+        self._rename_timestamp_local(data)
+        return data
 
     def _check_all_columns(
-        self, required_accelerometer_columns: list, data: pd.DataFrame
+        self, data: str, required_accelerometer_columns: list
     ) -> None:
-        missing_columns = set(required_accelerometer_columns) - set(data.columns)
-        if missing_columns:
-            logger.error(f"Missing columns: {missing_columns}")
-            raise ValueError(f"Missing columns: {missing_columns}")
+        try:
+            missing_columns = set(required_accelerometer_columns) - set(data.columns)
+            if missing_columns:
+                logger.error(f"Missing columns: {missing_columns}")
+                raise ValueError(f"Missing columns: {missing_columns}")
+            logger.info("All required columns found")
+        except Exception as e:
+            logger.error(f"Error checking columns: {e}")
+            raise e
 
     def _check_null_values(self, data: pd.DataFrame) -> None:
         if data.isnull().values.any():

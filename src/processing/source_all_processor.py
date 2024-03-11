@@ -9,18 +9,7 @@ from loguru import logger
 
 from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
-from src.models.acceleration import Acceleration
-
-"""
-Som jag förstår det så används DataProcessor och sedan också data_processor_2.py för att processa data från en mapp
-Du bör döpa åtminstone (...)_2 till något mer beskrivande så man förstår varför den ska användas också och vad den gör.
-
-1. Glöm inte typning på funktioner och variabler
-2. Sätt gärna funktionsordningen i klassen i klassen de används, t exså körs process_file först, lägg den direkt under init
-Sedan is_already_processed, osv -> ökar läsbarheten och gör det lättare att förstå vad som händer
-3. Sätt lowercase på variabler
-4. Se kommentarer i koden längre ned.
-"""
+from src.tools.acceleration import Acceleration
 
 
 class DataProcessor:
@@ -67,7 +56,8 @@ class DataProcessor:
         try:
             logger.info(f"Validating data from {file}")
             validated_data = self.data_validator.validate(
-                data, self.required_accelerometer_columns
+                data=data,
+                required_accelerator_columns=self.required_accelerometer_columns,
             )
             logger.info("Processing data")
             processed_data = self.motion_feature_calculator.calculate_all_features(

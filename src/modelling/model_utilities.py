@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime
 
 import joblib
 import numpy as np
@@ -13,10 +12,9 @@ import tensorflow as tf
 from src.helper_functions.model_helper_functions import (
     ModelHelpingFunctions,
 )
-from src.processing.split_sequences import SplitSequences
 
 
-class ModelTraining:
+class ModelUtilities:
     def __init__(self):
         self.model_helper = ModelHelpingFunctions()
 
@@ -36,7 +34,7 @@ class ModelTraining:
             self.model_helper.log_error(f"Error processing file {file_path}: {e}")
             raise e
 
-    def load_data_to_numpy_arrays(self, path):
+    def load_data_to_numpy_arrays(self, path: str) -> tuple[np.ndarray, np.ndarray]:
         self.model_helper.log_info("Loading data into numpy arrays")
         fall_sequences = []
         non_fall_sequences = []
@@ -61,7 +59,7 @@ class ModelTraining:
             non_fall_sequences, dtype=object
         )
 
-    def load_data(self):
+    def load_data(self) -> tuple[np.ndarray, np.ndarray]:
         try:
             self.model_helper.log_info("Loading data from data/seq/ for training")
             fall_data, non_fall_data = self.load_data_to_numpy_arrays("data/seq/")
@@ -73,7 +71,7 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error loading data: {e}")
 
-    def prepare_labels(self, fall_data, non_fall_data):
+    def prepare_labels(self, fall_data, non_fall_data) -> tuple[list[int], list[int]]:
         try:
             self.model_helper.log_info("Preparing labels for each numpy array sequence")
             fall_labels = [1 for _ in fall_data]
@@ -86,7 +84,7 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error preparing labels: {e}")
 
-    def pad_sequences(self, all_sequences):
+    def pad_sequences(self, all_sequences: list) -> np.ndarray:
         try:
             self.model_helper.log_info("Padding sequences to the same length")
             return pad_sequences(
@@ -96,7 +94,7 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error padding sequences: {e}")
 
-    def scale_sequences(self, padded_sequences):
+    def scale_sequences(self, padded_sequences: np.ndarray) -> np.ndarray:
         try:
             self.model_helper.log_info("Scaling sequences using MinMaxScaler")
             scaler = MinMaxScaler()
@@ -119,7 +117,9 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error scaling sequences: {e}")
 
-    def prep_train_val_test_data(self, scaled_sequences, all_labels):
+    def prep_train_val_test_data(
+        self, scaled_sequences: np.ndarray, all_labels: list
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[int], list[int], list[int]]:
         try:
             self.model_helper.log_info(
                 "Splitting data into train, validation, and test sets"
@@ -148,48 +148,20 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error preparing train, validation, and test data: {e}")
 
-    def get_model_hyperparameters(self, parameter_name):
-        self.model_helper.log_info(f"Getting hyperparameters for {parameter_name}")
-        with open(f"models/hyperparameters/{parameter_name}", "r") as file:
+    def get_model_hyperparameters(self, parameter_name: str) -> dict:
+        self.model_helper.log_info(f"Getting hyperparameters from {parameter_name}")
+        with open(f"{parameter_name}", "r") as file:
             data = json.load(file)
             return data
 
-    def create_model(self, input_shape):
-        self.model_helper.log_info(f"Creating model with input shape: {input_shape}")
-        model = tf.keras.Sequential(
-            [
-                tf.keras.layers.Masking(mask_value=0.0, input_shape=input_shape),
-                tf.keras.layers.Conv1D(
-                    filters=128,
-                    kernel_size=5,
-                    activation="relu",
-                ),
-                tf.keras.layers.MaxPooling1D(pool_size=2),
-                tf.keras.layers.Conv1D(filters=320, kernel_size=2, activation="relu"),
-                tf.keras.layers.MaxPooling1D(pool_size=2),
-                tf.keras.layers.Conv1D(filters=320, kernel_size=4, activation="relu"),
-                tf.keras.layers.MaxPooling1D(pool_size=2),
-                tf.keras.layers.Bidirectional(
-                    tf.keras.layers.LSTM(256, return_sequences=True)
-                ),
-                tf.keras.layers.Bidirectional(
-                    tf.keras.layers.LSTM(128, return_sequences=True)
-                ),
-                tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64)),
-                tf.keras.layers.Dense(256, activation="relu"),
-                tf.keras.layers.Dense(1, activation="sigmoid"),
-            ]
-        )
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001)
-        model.compile(
-            loss="binary_crossentropy", optimizer=optimizer, metrics=["accuracy"]
-        )
-        self.model_helper.log_info("Model created")
-        return model
-
     def train_model(
-        self, model, train_sequences, train_labels, val_sequences, val_labels
-    ):
+        self,
+        model: tf.keras.Model,
+        train_sequences: np.ndarray,
+        train_labels: list,
+        val_sequences: np.ndarray,
+        val_labels: list,
+    ) -> tf.keras.callbacks.History:
         try:
             self.model_helper.log_info(
                 "Training model with training sequences and labels"
@@ -199,7 +171,7 @@ class ModelTraining:
                 np.array(train_labels),
                 epochs=100,
                 validation_data=(val_sequences, np.array(val_labels)),
-                callbacks=[tf.keras.callbacks.EarlyStopping(patience=6)],
+                callbacks=[tf.keras.callbacks.EarlyStopping(patience=7)],
                 shuffle=True,
             )
 
@@ -207,60 +179,30 @@ class ModelTraining:
             self.model_helper.log_exception(e)
             raise Exception(f"Error training model: {e}")
 
-    def evaluate_model(self, model, test_sequences, test_labels):
+    def train_final_model(
+        self, model: tf.keras.Model, train_sequences: np.ndarray, train_labels: list
+    ) -> tf.keras.callbacks.History:
+        try:
+            self.model_helper.log_info(
+                "Training model with training sequences and labels"
+            )
+            return model.fit(
+                train_sequences,
+                np.array(train_labels),
+                epochs=32,
+                shuffle=True,
+            )
+
+        except Exception as e:
+            self.model_helper.log_exception(e)
+            raise Exception(f"Error training model: {e}")
+
+    def evaluate_model(
+        self, model: tf.keras.Model, test_sequences: np.ndarray, test_labels: list
+    ) -> list[float]:
         try:
             self.model_helper.log_info("Evaluating model")
             return model.evaluate(test_sequences, np.array(test_labels))
         except Exception as e:
             self.model_helper.log_exception(e)
             raise Exception(f"Error evaluating model: {e}")
-
-    def save_model(self, model):
-        try:
-            self.model_helper.log_info("Saving model")
-            date = datetime.now().strftime("%Y-%m-%d")
-            directory = f"models/model/{date}"
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            model.save(f"{directory}/fall_detection_model.keras")
-            self.model_helper.log_info("Model saved")
-
-        except FileNotFoundError as e:
-            self.model_helper.log_exception(e)
-            raise FileNotFoundError(f"Error saving model: {e}")
-
-        except Exception as e:
-            self.model_helper.log_exception(e)
-            raise Exception(f"Error saving model: {e}")
-
-    def start(self):
-        fall_data, non_fall_data = self.load_data()
-        fall_labels, non_fall_labels = self.prepare_labels(fall_data, non_fall_data)
-        all_sequences = list(fall_data) + list(non_fall_data)
-        all_labels = fall_labels + non_fall_labels
-        padded_sequences = self.pad_sequences(all_sequences)
-
-        scaled_sequences = self.scale_sequences(padded_sequences)
-        (
-            train_sequences,
-            val_sequences,
-            test_sequences,
-            train_labels,
-            val_labels,
-            test_labels,
-        ) = self.prep_train_val_test_data(scaled_sequences, all_labels)
-        model = self.create_model(train_sequences[0].shape)
-        history = self.train_model(
-            model, train_sequences, train_labels, val_sequences, val_labels
-        )
-        self.evaluate_model(model, test_sequences, test_labels)
-        self.save_model(model)
-
-
-def main():
-    model_training = ModelTraining()
-    model_training.start()
-
-
-if __name__ == "__main__":
-    main()
