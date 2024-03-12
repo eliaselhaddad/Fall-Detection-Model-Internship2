@@ -37,8 +37,8 @@ from bleak import discover
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
-from src.gui.sequence_data_collection_gui import SequenceDataCollectionGui
-from src.models.acceleration import Acceleration
+from src.gui.data_ui import DataUI
+from src.models.Acceleration import Acceleration
 
 # from src.gui.annotation import AnnotateAccelerometerData
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
 
     thread_instance = ThreadManager()
 
-    annotation = SequenceDataCollectionGui()
+    annotation = DataUI()
 
     thread_instance.data_received.connect(annotation.on_data_received)
 

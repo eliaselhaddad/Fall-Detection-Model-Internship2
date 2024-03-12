@@ -1,28 +1,14 @@
-import sys
 import csv
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, time
 from enum import Enum
-import pandas as pd
-
-from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QProgressBar,
-    QPushButton,
-    QWidget,
-    QVBoxLayout,
-    QGridLayout,
-    QStatusBar,
-)
 
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
+from PyQt6.QtWidgets import QWidget, QGridLayout, QProgressBar, QStatusBar, QPushButton, QVBoxLayout
+from matplotlib import pyplot as plt
 
-import time
-from src.models.acceleration import Acceleration
-
-"""Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
+from src.models.Acceleration import Acceleration
 
 
 class SequenceCollectionTypes(Enum):
@@ -31,9 +17,10 @@ class SequenceCollectionTypes(Enum):
     fall_sequence = 1
 
 
-class SequenceDataCollectionGui(QMainWindow):
+class SequenceDataCollectionWidget(QWidget):
     def __init__(self):
         super().__init__()
+
         # This is what decides how many data points to collect before saving to csv
         self.data_sequence_length = 13 * 6
         self.sequence_recording_type: SequenceCollectionTypes = (
@@ -50,9 +37,7 @@ class SequenceDataCollectionGui(QMainWindow):
         self.line_z = None
         self.jerk_line = None
         self.figure, self.ax = plt.subplots()
-
-        self.setWindowTitle("Record Accelerometer Data")
-        self.layout: QVBoxLayout = self.create_plot_widget()
+        # self.layout: QVBoxLayout = self.create_plot_widget()
 
         self.button_widget = QWidget(self)
         button_layout = QGridLayout(self.button_widget)
@@ -89,7 +74,19 @@ class SequenceDataCollectionGui(QMainWindow):
         button_layout.setColumnStretch(0, 1)
         button_layout.setColumnStretch(1, 1)
 
-        self.layout.addWidget(self.button_widget)
+        # self.layout.addWidget(self.button_widget)
+
+    def receive_accelerometer_data(self, acceleration: Acceleration):
+        if len(self.accelerometer_data) == self.data_sequence_length:
+            print("stop recording")
+            self.stop_sequence_recording()
+
+        if self.sequence_recording_type != SequenceCollectionTypes.no_sequence:
+            acceleration.fall_state = self.sequence_recording_type.value
+            self.accelerometer_data.append(acceleration)
+            self.update_plot(acceleration=acceleration)
+
+        self.progress_bar.setValue(len(self.accelerometer_data))
 
     def create_plot_widget(self):
         plot_widget = QWidget()
@@ -180,18 +177,6 @@ class SequenceDataCollectionGui(QMainWindow):
         self.fall_button.setEnabled(True)
         self.not_fall_button.setEnabled(True)
 
-    def on_data_received(self, acceleration: Acceleration):
-        if len(self.accelerometer_data) == self.data_sequence_length:
-            print("stop recording")
-            self.stop_sequence_recording()
-
-        if self.sequence_recording_type != SequenceCollectionTypes.no_sequence:
-            acceleration.fall_state = self.sequence_recording_type.value
-            self.accelerometer_data.append(acceleration)
-            self.update_plot(acceleration=acceleration)
-
-        self.progress_bar.setValue(len(self.accelerometer_data))
-
     def clear_plot(self):
         self.x_data.clear()
         self.y_data.clear()
@@ -236,9 +221,3 @@ class SequenceDataCollectionGui(QMainWindow):
             print(f"for loop iteration: {i}")
             self.on_data_received(acc)
             time.sleep(0.01)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = SequenceDataCollectionGui()
-    window.show()
