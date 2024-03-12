@@ -37,7 +37,9 @@ from bleak import discover
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
-from src.models import Acceleration
+
+from src.tools.acceleration import Acceleration
+
 from src.gui.annotation import AnnotateAccelerometerData
 
 # from src.binary_parser import DataView

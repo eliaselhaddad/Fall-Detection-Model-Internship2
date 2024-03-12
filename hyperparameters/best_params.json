@@ -1,0 +1,16 @@
+{
+  "conv1_filters": 256,
+  "conv1_kernel": 2,
+  "pool1_size": 2,
+  "conv2_filters": 480,
+  "conv2_kernel": 3,
+  "pool2_size": 3,
+  "conv3_filters": 416,
+  "conv3_kernel": 3,
+  "pool3_size": 2,
+  "lstm1_units": 416,
+  "lstm2_units": 224,
+  "lstm3_units": 320,
+  "dense_units": 448,
+  "learning_rate": 0.001
+}

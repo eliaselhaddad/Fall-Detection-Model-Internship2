@@ -4,7 +4,7 @@ from airflow.operators.python import PythonOperator
 from airflow import DAG
 
 from src.aws.events import get_data_from_s3, save_data_to_s3
-from src.processing import data_processor
+from src.processing import source_all_processor
 
 default_args = {
     "owner": "airflow",
@@ -31,7 +31,7 @@ with DAG(
 
     process_data_task = PythonOperator(
         task_id="process_data",
-        python_callable=data_processor.main,
+        python_callable=source_all_processor.main,
     )
 
     save_data_to_s3_task = PythonOperator(

@@ -409,6 +409,12 @@ notebooks/
 logs/
 
 data/
+
+models/
+
+
+__pycache__/
+
 data2/
 models/
 

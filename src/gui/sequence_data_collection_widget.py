@@ -5,10 +5,20 @@ from enum import Enum
 
 import numpy as np
 import pandas as pd
-from PyQt6.QtWidgets import QWidget, QGridLayout, QProgressBar, QStatusBar, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import (
+    QWidget,
+    QGridLayout,
+    QProgressBar,
+    QStatusBar,
+    QPushButton,
+    QVBoxLayout,
+)
 from matplotlib import pyplot as plt
 
-from src.models.Acceleration import Acceleration
+import time
+from src.tools.acceleration import Acceleration
+
+"""Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
 
 
 class SequenceCollectionTypes(Enum):
