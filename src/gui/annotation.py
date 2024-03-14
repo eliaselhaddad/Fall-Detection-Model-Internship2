@@ -4,25 +4,15 @@ import csv
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QFileDialog,
-    QMessageBox,
     QPushButton,
     QWidget,
-    QVBoxLayout,
     QGridLayout,
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 
 from datetime import datetime
 
-# from acc_types import Acceleration
 from src.tools.acceleration import Acceleration
-
-
 from src.modelling.model_trigger import ModelTrigger
-
-"""Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
 
 DATA_POINTS = []
 

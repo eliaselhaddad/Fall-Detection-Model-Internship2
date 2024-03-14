@@ -78,24 +78,12 @@ class ModelTrigger:
             logger.info(f"Prediction for file{current_index - 4 + i}: {prediction}")
 
         self.print_prediction(predictions)
-        # if "Fall" in predictions:
-        #     final_prediction = "Fall"
-        # else:
-        #     final_prediction = "Not Fall"
-
-        # logger.info(f"Aggregated prediction: {final_prediction}")
-
-        # logger.info(f"Aggregated prediction: {final_prediction}")
-        # for file_name, file_data in files_to_predict:
-        #     prediction = self.predict_file(file_data)
-        # logger.info(f"Prediction for {file_name}: {prediction}")
 
     def print_prediction(self, predictions):
         if "Fall" in predictions:
-            final_prediction = "Fall"
+            logger.warning(f"A fall was detected")
         else:
-            final_prediction = "Not Fall"
-        logger.info(f"Aggregated prediction: {final_prediction}")
+            logger.success(f"No fall was detected")
 
     def predict_file(self, df: pd.DataFrame):
         predict_stream = PredictStream(df, self.latest_model_date)
