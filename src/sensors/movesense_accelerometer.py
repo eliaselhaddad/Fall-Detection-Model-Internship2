@@ -36,8 +36,8 @@ from bleak import _logger as logger
 from bleak import discover
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
+from src.gui.data_ui import DataUI
 
-from src.gui.sequence_data_collection_widget import SequenceDataCollectionGui
 from src.tools.acceleration import Acceleration
 
 # from src.gui.annotation import AnnotateAccelerometerData
