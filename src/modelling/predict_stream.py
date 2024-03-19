@@ -3,9 +3,9 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
-from keras.models import load_model
 from src.processing.data_validator import DataValidator
 from src.processing.motion_features import MotionFeatureCalculator
+import tensorflow as tf
 
 
 class PredictStream:
@@ -17,11 +17,11 @@ class PredictStream:
         self.data_validator = DataValidator()
         self.motion_feature_calculator = MotionFeatureCalculator()
         self.path_to_scaler = "models/scaler/scaler.pkl"
-        self.model_path = f"models/model/{model_date}/fall_detection_model.keras"
+        self.model_path = f"models/model/{model_date}/fall_detection_model"
         if PredictStream.scaler is None:
             PredictStream.scaler = self.load_scaler(self.path_to_scaler)
         if PredictStream.model is None:
-            PredictStream.model = load_model(self.model_path)
+            PredictStream.model = tf.keras.models.load_model(self.model_path)
 
     def process_data(self) -> pd.DataFrame:
         if "timestamp" not in self.data.columns:
@@ -60,7 +60,7 @@ class PredictStream:
         )
 
     @staticmethod
-    def pad_data(data, maxlen=108):
+    def pad_data(data, maxlen=109):
         return pad_sequences(
             [data], maxlen=maxlen, dtype="float32", padding="post", truncating="post"
         )[0]

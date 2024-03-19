@@ -3,22 +3,22 @@ import os
 
 import joblib
 import pandas as pd
-from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from loguru import logger
 
 from src.helper_functions.model_helper_functions import ModelHelpingFunctions
+import tensorflow as tf
 
 
 class FallPrediction:
     def __init__(self, model_path: str, path_to_scaler: str, path_to_data: str):
-        self.model = load_model(model_path)
+        self.model = tf.keras.models.load_model(model_path)
         self.scaler_path = path_to_scaler
         self.model_helper = ModelHelpingFunctions()
         self.data = pd.read_csv(path_to_data)
         self.minimun_data_size = 50
         self.probability_threshold = 0.5
-        self.padding_size = 108
+        self.padding_size = 109
         self.configurations = [
             (50, 49),
             (40, 59),
@@ -174,26 +174,10 @@ def get_latest_model_date(directory_path):
         raise Exception(f"Error getting latest model date: {e}")
 
 
-# def main():
-#     date = get_latest_model_date("models/model/")
-#     model_path = f"models/model/{date}/fall_detection_model.keras"
-#     scaler_path = "models/scaler/scaler.pkl"
-#     data_path = "data/sample_cleaned/merged_data.csv"
-
-#     fp = FallPrediction(model_path, scaler_path, data_path)
-#     cropped_datasets = fp.crop_data(fp.df)
-#     # fp.crop_data(fp.data)
-#     # fp.predict_fall()
-
-#     for cropped_data in cropped_datasets:
-#         fp.data = cropped_data  # Update the data attribute with each cropped dataset
-#         fp.predict_fall()
-
-
 def main():
     date = get_latest_model_date("models/model/")
-    model_path = f"models/model/{date}/fall_detection_model.keras"
-    scaler_path = "models/scaler2/scaler.pkl"
+    model_path = f"models/model/{date}/fall_detection_model"
+    scaler_path = "models/scaler/scaler.pkl"
     data_path = "data/sample_cleaned/merged_data.csv"
 
     fp = FallPrediction(model_path, scaler_path, data_path)

@@ -7,6 +7,7 @@ import dataclasses
 from src.tools.acceleration import Acceleration
 from collections import deque
 from src.modelling.predict_stream import PredictStream
+from datetime import datetime
 
 
 class ModelTrigger:
@@ -42,6 +43,9 @@ class ModelTrigger:
         self.g_force_threshold = 12
         self.csv_file_counter = 1
         self.latest_model_date = self.get_latest_model_date("models/model/")
+        self.predict_conclusion = None
+        self.should_trigger_conclusion = None
+        self.last_fall_prediction_time = None
 
     def update_data_window(self, acceleration: Acceleration):
         new_row = pd.DataFrame(
@@ -78,12 +82,20 @@ class ModelTrigger:
             logger.info(f"Prediction for file{current_index - 4 + i}: {prediction}")
 
         self.print_prediction(predictions)
+        self.prediction_value(predictions)
 
     def print_prediction(self, predictions):
         if "Fall" in predictions:
             logger.warning(f"A fall was detected")
         else:
             logger.success(f"No fall was detected")
+
+    def prediction_value(self, predictions):
+        if "Fall" in predictions:
+            self.predict_conclusion = "Fall"
+            self.last_fall_prediction_time = datetime.now()
+        else:
+            self.predict_conclusion = "No Fall"
 
     def predict_file(self, df: pd.DataFrame):
         predict_stream = PredictStream(df, self.latest_model_date)
@@ -108,3 +120,16 @@ class ModelTrigger:
         else:
             status = "not_triggered"
         logger.info(f"{removed_file} {status}")
+
+    def should_display_fall(self):
+        if self.predict_conclusion == "Fall":
+            if (datetime.now() - self.last_fall_prediction_time).total_seconds() < 5:
+                return True
+
+        return False
+
+    def get_latest_prediction(self):
+        return self.predict_conclusion
+
+    def get_latest_trigger_status(self):
+        return self.should_trigger_conclusion

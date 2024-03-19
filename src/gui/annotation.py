@@ -92,6 +92,16 @@ class AnnotateAccelerometerData(QMainWindow):
         # print(acceleration)
         self.model_trigger.update_data_window(acceleration)
 
+        should_model_trigger = self.model_trigger.get_latest_trigger_status()
+        if should_model_trigger is not None:
+            print(should_model_trigger)
+
+        if self.model_trigger.should_display_fall():
+            prediction_value = self.model_trigger.get_latest_prediction()
+            print(prediction_value)
+        else:
+            self.model_trigger.predict_conclusion = None
+
         if self.fall_state == "Start":
             acceleration.fall_state = "1"
         elif self.fall_state == "Stop":

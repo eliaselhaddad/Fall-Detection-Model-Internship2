@@ -103,7 +103,7 @@ class ModelUtilities:
                 padded_sequences.reshape(-1, padded_sequences.shape[-1])
             ).reshape(padded_sequences.shape)
 
-            scaler_directory = "models/scaler2"
+            scaler_directory = "models/scaler"
             if not os.path.exists(scaler_directory):
                 os.makedirs(scaler_directory)
 
@@ -171,7 +171,7 @@ class ModelUtilities:
                 np.array(train_labels),
                 epochs=100,
                 validation_data=(val_sequences, np.array(val_labels)),
-                callbacks=[tf.keras.callbacks.EarlyStopping(patience=7)],
+                callbacks=[tf.keras.callbacks.EarlyStopping(patience=5)],
                 shuffle=True,
             )
 
@@ -189,7 +189,7 @@ class ModelUtilities:
             return model.fit(
                 train_sequences,
                 np.array(train_labels),
-                epochs=32,
+                epochs=33,
                 shuffle=True,
             )
 

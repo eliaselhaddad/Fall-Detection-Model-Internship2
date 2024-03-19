@@ -33,22 +33,6 @@ class ModelTraining:
                 tf.keras.layers.MaxPooling1D(
                     pool_size=best_hyperparameters["pool1_size"]
                 ),
-                tf.keras.layers.Conv1D(
-                    filters=best_hyperparameters["conv2_filters"],
-                    kernel_size=best_hyperparameters["conv2_kernel"],
-                    activation="relu",
-                ),
-                tf.keras.layers.MaxPooling1D(
-                    pool_size=best_hyperparameters["pool2_size"]
-                ),
-                tf.keras.layers.Conv1D(
-                    filters=best_hyperparameters["conv3_filters"],
-                    kernel_size=best_hyperparameters["conv3_kernel"],
-                    activation="relu",
-                ),
-                tf.keras.layers.MaxPooling1D(
-                    pool_size=best_hyperparameters["pool3_size"]
-                ),
                 tf.keras.layers.Bidirectional(
                     tf.keras.layers.LSTM(
                         best_hyperparameters["lstm1_units"], return_sequences=True
@@ -59,9 +43,7 @@ class ModelTraining:
                         best_hyperparameters["lstm2_units"], return_sequences=True
                     )
                 ),
-                tf.keras.layers.Bidirectional(
-                    tf.keras.layers.LSTM(best_hyperparameters["lstm3_units"])
-                ),
+                tf.keras.layers.GlobalAveragePooling1D(),
                 tf.keras.layers.Dense(
                     best_hyperparameters["dense_units"], activation="relu"
                 ),
@@ -84,7 +66,8 @@ class ModelTraining:
             directory = f"models/model/{date}"
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            model.save(f"{directory}/fall_detection_model.keras")
+            model_save_path = f"{directory}/fall_detection_model"
+            model.save(model_save_path, save_format="tf")
             self.model_helper.log_info("Model saved")
 
         except FileNotFoundError as e:
