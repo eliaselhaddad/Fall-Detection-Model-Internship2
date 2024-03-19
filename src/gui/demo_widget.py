@@ -1,23 +1,22 @@
 """python -m src.sensors.movesense_accelerometer"""
+
 from collections import deque
-import sys
-from pathlib import Path
-from winsound import PlaySound, SND_ASYNC
+from datetime import datetime
+
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QPushButton,
     QLabel,
-    QProgressBar,
-    QHBoxLayout,
-    QSpacerItem,
-    QSizePolicy,
+    QGridLayout,
 )
-from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtCore import QTimer, Qt, QUrl
+from PyQt6.QtMultimedia import QSoundEffect
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtMultimedia import QSound
+
 from src.tools.acceleration import Acceleration
+from src.modelling.model_trigger import ModelTrigger
 
 
 class DemoWidget(QWidget):
@@ -28,12 +27,14 @@ class DemoWidget(QWidget):
         self.data_sequence_length = 13 * 18
         self.g_force_threshold = 12
         self.is_streaming = False
+        self.max_last_fall_items = 1
 
         # Initialize data storage
         self.x_data = deque(maxlen=self.data_sequence_length)
         self.y_data = deque(maxlen=self.data_sequence_length)
         self.z_data = deque(maxlen=self.data_sequence_length)
         self.g_force_data = deque(maxlen=self.data_sequence_length)
+        self.last_fall_data = deque(maxlen=self.max_last_fall_items)
 
         # UI setup
         self.layout = QVBoxLayout(self)
@@ -43,7 +44,16 @@ class DemoWidget(QWidget):
         # Blink timer and siren sound
         self.blink_timer = QTimer(self)
         self.blink_timer.timeout.connect(self.blink_warning)
-        self.siren_sound = QSound("data/sound_effects/siren.wav")
+        self.stop_blink_timer = QTimer(self)
+        self.stop_blink_timer.timeout.connect(self.stop_blinking)
+
+        # Sound set up
+        alert_path = "assets/alert.wav"
+        self.siren_sound = QSoundEffect(self)
+        self.siren_sound.setSource(QUrl.fromLocalFile(alert_path))
+        self.siren_sound.setVolume(1.0)
+
+        self.model_trigger = ModelTrigger(csv_row_limit=78, csv_overlap=26)
 
     def setupPlotWidget(self):
         self.plotWidget = pg.PlotWidget()
@@ -56,58 +66,96 @@ class DemoWidget(QWidget):
         self.layout.addWidget(self.plotWidget)
 
     def setupControlButtons(self):
-        # Create a new horizontal layout for the button and the warning label
-        bottomLayout = QHBoxLayout()
+        gridLayout = QGridLayout()
 
-        # Setup the start/stop streaming button
+        gridLayout.setContentsMargins(20, 20, 20, 20)
+        gridLayout.setSpacing(20)
+
+        self.createStreamingButton(gridLayout, 0, 0)
+        self.createLastFallView(gridLayout, 0, 1)
+
+        self.createTriggerInfoView(gridLayout, 1, 0)
+        self.createFallInfoView(gridLayout, 1, 1)
+
+        self.layout.addLayout(gridLayout)
+
+    def createStreamingButton(self, layout, row, column):
         self.start_streaming_button = QPushButton("Start/Stop Streaming", self)
-        self.start_streaming_button.setMinimumHeight(40)
-        self.start_streaming_button.setMinimumWidth(200)
+        self.start_streaming_button.setFixedSize(300, 100)
         self.start_streaming_button.setStyleSheet(
-            "background-color: #4CAF50; color: white;" "font-size: 20px;"
+            "background-color: #24788F; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
         )
         self.start_streaming_button.clicked.connect(self.toggleStreaming)
-        bottomLayout.addWidget(self.start_streaming_button)
+        layout.addWidget(self.start_streaming_button, row, column)
 
-        # Setup the threshold checking button
-        self.check_model_button = QPushButton("Threshold Met. Checking...", self)
-        self.check_model_button.setMinimumHeight(
-            40
-        )  # Same height as the start_streaming_button
-        self.check_model_button.setMinimumWidth(
-            200
-        )  # Same width as the start_streaming_button
-        self.check_model_button.setStyleSheet(
-            "background-color: #2196F3; color: white; font-size: 20px;"  # A different color for distinction
+    def createLastFallView(self, layout, row, column):
+        self.last_fall_label = QLabel("No Fall Recorded Yet", self)
+
+        self.last_fall_label.setFixedSize(800, 100)
+        self.last_fall_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.last_fall_label.setStyleSheet(
+            "background-color: #849DAB; color: white; font-size: 24px; border-radius: 8px;  font-weight: bold; font-family: Monospace;"
         )
-        # Initially disabled, can be enabled based on your application logic
-        self.check_model_button.setEnabled(False)
-        self.check_model_button.hide()
-        bottomLayout.addWidget(self.check_model_button)
+        layout.addWidget(self.last_fall_label, row, column)
 
-        # Setup the warning label
-        self.warning_label = QLabel("Fall Detected!", self)
-        self.warning_label.setMinimumWidth(600)  # Make the warning label wider
-        self.warning_label.setStyleSheet("color: white; background-color: red;")
-        self.warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.warning_label.hide()  # Initially hidden
-        bottomLayout.addWidget(self.warning_label)
+    def updateLastFallView(self):
+        if not self.last_fall_data:
+            self.last_fall_label.setText("No Fall Recorded Yet")
+        else:
+            fall_times = [
+                "Last fall recorded at: " + time.strftime("%Y-%m-%d %H:%M:%S")
+                for time in self.last_fall_data
+            ]
+            self.last_fall_label.setText("\n".join(fall_times))
 
-        # A spacer item to push the button and the label to the left
-        spacerItem = QSpacerItem(
-            20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+    def record_fall(self):
+        self.last_fall_data.appendleft(datetime.now())
+        self.updateLastFallView()
+
+    def createTriggerInfoView(self, layout, row, column):
+        self.trigger_info_label = QLabel("Trigger Status: Ok", self)
+        self.trigger_info_label.setFixedSize(300, 100)
+        self.trigger_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.updateTriggerInfoView("Ok")
+        layout.addWidget(self.trigger_info_label, row, column)
+
+    def updateTriggerInfoView(self, status):
+        status_text = "Trigger Status: " + status
+        self.trigger_info_label.setText(status_text)
+        if status == "Triggered":
+            self.trigger_info_label.setStyleSheet(
+                "background-color: #FFBF00; color: white; font-size: 22px; border-radius: 8px;  font-weight: bold; font-family: Monospace;"
+            )
+        else:
+            self.trigger_info_label.setStyleSheet(
+                "background-color: #FFFFFF; color: black; font-size: 22px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+            )
+
+    def createFallInfoView(self, layout, row, column):
+        self.fall_info_label = QLabel("Fall Status Ok", self)
+        self.fall_info_label.setFixedSize(800, 100)
+        self.fall_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.updateFallInfoView("Ok")
+        layout.addWidget(self.fall_info_label, row, column)
+
+    def updateFallInfoView(self, status):
+        status_text = "Fall Status: " + status + " Detected"
+        self.fall_info_label.setText(status_text)
+        if status == "Fall":
+            self.fall_info_label.setStyleSheet(
+                "background-color: red; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+            )
+        else:
+            self.fall_info_label.setStyleSheet(
+                "background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+            )
+
+    def resetFall(self):
+        self.fall_info_label.setText("Fall Status Ok")
+        self.fall_info_label.setStyleSheet(
+            "background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px;font-weight: bold; font-family: Monospace;"
         )
-        bottomLayout.addItem(spacerItem)
-
-        # Horizontal layout with the button, label, and spacer to the main layout
-        self.layout.addLayout(bottomLayout)
-
-    def setupWarningLabel(self):
-        self.warning_label = QLabel("Fall Detected!", self)
-        self.warning_label.setStyleSheet("color: white; background-color: red;")
-        self.warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.warning_label.hide()
-        self.layout.addWidget(self.warning_label)
 
     def toggleStreaming(self):
         self.is_streaming = not self.is_streaming
@@ -116,14 +164,46 @@ class DemoWidget(QWidget):
         )
 
     def receive_accelerometer_data(self, acceleration: Acceleration):
-        if self.is_streaming:
-            self.x_data.append(acceleration.ax)
-            self.y_data.append(acceleration.ay)
-            self.z_data.append(acceleration.az)
-            g_force = self.calculate_g_force(acceleration)
-            self.g_force_data.append(g_force)
-            self.check_g_force_threshold(g_force, self.g_force_threshold)
-            self.update_plot()
+        self.update_data(acceleration)
+        self.trigger_model_check(acceleration)
+        self.update_plot()
+
+    def update_data(self, acceleration: Acceleration):
+        self.x_data.append(acceleration.ax)
+        self.y_data.append(acceleration.ay)
+        self.z_data.append(acceleration.az)
+        g_force = self.calculate_g_force(acceleration)
+        self.g_force_data.append(g_force)
+
+    def trigger_model_check(self, acceleration: Acceleration):
+        self.model_trigger.update_data_window(acceleration)
+        should_model_trigger = self.model_trigger.get_latest_trigger_status()
+
+        if should_model_trigger:
+            self.update_model_trigger_status(should_model_trigger)
+
+        if self.model_trigger.should_display_fall():
+            self.update_prediction_status(self.model_trigger.get_latest_prediction())
+        else:
+            self.model_trigger.predict_conclusion = None
+
+    def update_model_trigger_status(self, status: str):
+        self.threshold_trigger_status = status
+        self.trigger_info_label.setText(status)
+        self.updateTriggerInfoView(status)
+        self.trigger_info_label.show()
+        self.trigger_info_label.setEnabled(True)
+
+    def update_prediction_status(self, prediction: str):
+        self.prediction_status = prediction
+        self.fall_info_label.setText(prediction)
+        self.updateFallInfoView(prediction)
+        self.fall_info_label.show()
+
+        if prediction == "Fall":
+            self.blink_timer.start(500)
+            self.stop_blink_timer.start(5000)
+            self.record_fall()
 
     def update_plot(self):
         self.x_plot.setData(list(self.x_data))
@@ -137,14 +217,14 @@ class DemoWidget(QWidget):
         )
         return g_force
 
-    def check_g_force_threshold(self, g_force: float, g_force_threshold: float):
-        if g_force > g_force_threshold:
-            self.warning_label.show()
-            self.blink_timer.start(500)
-            self.check_model_button.show()
-            # SND_ASYNC flag to play the sound asynchronously without blocking the main thread
-            PlaySound("data/sound_effects/siren.wav", SND_ASYNC)
-
     def blink_warning(self):
-        # Toggle the visibility of the warning label to create a blinking effect
-        self.warning_label.setVisible(not self.warning_label.isVisible())
+        self.fall_info_label.setVisible(not self.fall_info_label.isVisible())
+
+        if not self.fall_info_label.isVisible():
+            self.siren_sound.play()
+
+    def stop_blinking(self):
+        self.blink_timer.stop()
+        self.fall_info_label.setVisible(True)
+        self.resetFall()
+        self.siren_sound.stop()

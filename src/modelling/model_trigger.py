@@ -111,7 +111,15 @@ class ModelTrigger:
 
     def should_trigger(self, df: pd.DataFrame):
         g_force = self.calculate_g_force(df)
-        return g_force.max() > self.g_force_threshold
+        condition = g_force.max() > self.g_force_threshold
+        self.set_triggerd_status(condition)
+        return condition
+
+    def set_triggerd_status(self, condition):
+        if condition:
+            self.should_trigger_conclusion = "Triggered"
+        else:
+            self.should_trigger_conclusion = "Not Triggered"
 
     def check_and_print_removed_file(self):
         removed_file, removed_data = self.csv_buffer[0]
@@ -123,7 +131,7 @@ class ModelTrigger:
 
     def should_display_fall(self):
         if self.predict_conclusion == "Fall":
-            if (datetime.now() - self.last_fall_prediction_time).total_seconds() < 5:
+            if (datetime.now() - self.last_fall_prediction_time).total_seconds() < 1:
                 return True
 
         return False
