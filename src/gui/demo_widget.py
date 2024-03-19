@@ -1,3 +1,4 @@
+"""python -m src.sensors.movesense_accelerometer"""
 from collections import deque
 import sys
 from pathlib import Path
@@ -60,9 +61,29 @@ class DemoWidget(QWidget):
 
         # Setup the start/stop streaming button
         self.start_streaming_button = QPushButton("Start/Stop Streaming", self)
-        self.start_streaming_button.setMinimumHeight(40)  # Make the button taller
+        self.start_streaming_button.setMinimumHeight(40)
+        self.start_streaming_button.setMinimumWidth(200)
+        self.start_streaming_button.setStyleSheet(
+            "background-color: #4CAF50; color: white;" "font-size: 20px;"
+        )
         self.start_streaming_button.clicked.connect(self.toggleStreaming)
         bottomLayout.addWidget(self.start_streaming_button)
+
+        # Setup the threshold checking button
+        self.check_model_button = QPushButton("Threshold Met. Checking...", self)
+        self.check_model_button.setMinimumHeight(
+            40
+        )  # Same height as the start_streaming_button
+        self.check_model_button.setMinimumWidth(
+            200
+        )  # Same width as the start_streaming_button
+        self.check_model_button.setStyleSheet(
+            "background-color: #2196F3; color: white; font-size: 20px;"  # A different color for distinction
+        )
+        # Initially disabled, can be enabled based on your application logic
+        self.check_model_button.setEnabled(False)
+        self.check_model_button.hide()
+        bottomLayout.addWidget(self.check_model_button)
 
         # Setup the warning label
         self.warning_label = QLabel("Fall Detected!", self)
@@ -120,6 +141,7 @@ class DemoWidget(QWidget):
         if g_force > g_force_threshold:
             self.warning_label.show()
             self.blink_timer.start(500)
+            self.check_model_button.show()
             # SND_ASYNC flag to play the sound asynchronously without blocking the main thread
             PlaySound("data/sound_effects/siren.wav", SND_ASYNC)
 
