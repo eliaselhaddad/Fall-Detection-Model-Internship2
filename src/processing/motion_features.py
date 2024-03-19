@@ -15,13 +15,13 @@ class MotionFeatureCalculator:
         logger.info("Calculating all motion features")
         self.dataframe = dataframe
         self.check_all_columns(dataframe, accel_cols)
-        self.calculate_time_interval(dataframe, timestamp_col, time_unit)
-        self.calculate_velocity_displacement(accel_cols, dataframe)
-        self.calculate_angles(dataframe)
+        # self.calculate_time_interval(dataframe, timestamp_col, time_unit)
+        # self.calculate_velocity_displacement(accel_cols, dataframe)
+        # self.calculate_angles(dataframe)
         self.calculate_g_force(dataframe)
-        self.calculate_jerk_orientation(dataframe)
-        self.calculate_magnitudes(dataframe)
-        self.calculate_impact_detection(dataframe)
+        # self.calculate_jerk_orientation(dataframe)
+        # self.calculate_magnitudes(dataframe)
+        # self.calculate_impact_detection(dataframe)
         return dataframe
 
     def check_all_columns(self, dataframe: pd.DataFrame, accel_cols: list) -> None:

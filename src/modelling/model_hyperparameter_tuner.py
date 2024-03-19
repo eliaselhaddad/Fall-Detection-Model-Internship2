@@ -79,31 +79,7 @@ class ModelHyperparameterTuner(HyperModel):
             tf.keras.layers.MaxPooling1D(
                 pool_size=hp.Int("pool1_size", min_value=2, max_value=4, step=1)
             )
-        )
-        model.add(
-            tf.keras.layers.Conv1D(
-                filters=hp.Int("conv2_filters", min_value=64, max_value=512, step=32),
-                kernel_size=hp.Int("conv2_kernel", min_value=2, max_value=5, step=1),
-                activation="relu",
-            )
-        )
-        model.add(
-            tf.keras.layers.MaxPooling1D(
-                pool_size=hp.Int("pool2_size", min_value=2, max_value=4, step=1)
-            )
-        )
-        model.add(
-            tf.keras.layers.Conv1D(
-                filters=hp.Int("conv3_filters", min_value=64, max_value=512, step=32),
-                kernel_size=hp.Int("conv3_kernel", min_value=2, max_value=5, step=1),
-                activation="relu",
-            )
-        )
-        model.add(
-            tf.keras.layers.MaxPooling1D(
-                pool_size=hp.Int("pool3_size", min_value=2, max_value=4, step=1)
-            )
-        )
+        ),
         model.add(
             tf.keras.layers.Bidirectional(
                 tf.keras.layers.LSTM(
@@ -119,14 +95,9 @@ class ModelHyperparameterTuner(HyperModel):
                     return_sequences=True,
                 )
             )
-        )
-        model.add(
-            tf.keras.layers.Bidirectional(
-                tf.keras.layers.LSTM(
-                    hp.Int("lstm3_units", min_value=64, max_value=512, step=32)
-                )
-            )
-        )
+        ),
+        model.add(tf.keras.layers.GlobalAveragePooling1D()),
+
         model.add(
             tf.keras.layers.Dense(
                 hp.Int("dense_units", min_value=64, max_value=512, step=32),

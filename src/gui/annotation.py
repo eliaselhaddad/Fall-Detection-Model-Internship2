@@ -4,22 +4,15 @@ import csv
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QFileDialog,
-    QMessageBox,
     QPushButton,
     QWidget,
-    QVBoxLayout,
     QGridLayout,
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 
 from datetime import datetime
 
-# from acc_types import Acceleration
 from src.tools.acceleration import Acceleration
-
-"""Annotate Acceleration Data From Accelerometer And Save data as CSV file"""
+from src.modelling.model_trigger import ModelTrigger
 
 DATA_POINTS = []
 
@@ -77,6 +70,8 @@ class AnnotateAccelerometerData(QMainWindow):
         save_button.clicked.connect(self.save_as_csv)
         layout.addWidget(save_button, 2, 0)
 
+        self.model_trigger = ModelTrigger(csv_row_limit=78, csv_overlap=26)
+
     def fall_button_clicked(self):
         self.fall_state = "Start"
         print("Fall", self.fall_state)
@@ -94,7 +89,19 @@ class AnnotateAccelerometerData(QMainWindow):
         print("Restart", self.fall_state)
 
     def on_data_received(self, acceleration: Acceleration):
-        print(acceleration)
+        # print(acceleration)
+        self.model_trigger.update_data_window(acceleration)
+
+        should_model_trigger = self.model_trigger.get_latest_trigger_status()
+        if should_model_trigger is not None:
+            print(should_model_trigger)
+
+        if self.model_trigger.should_display_fall():
+            prediction_value = self.model_trigger.get_latest_prediction()
+            print(prediction_value)
+        else:
+            self.model_trigger.predict_conclusion = None
+
         if self.fall_state == "Start":
             acceleration.fall_state = "1"
         elif self.fall_state == "Stop":
