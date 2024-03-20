@@ -2,6 +2,7 @@
 
 from collections import deque
 from datetime import datetime
+import os
 
 from PyQt6.QtWidgets import (
     QWidget,
@@ -9,6 +10,10 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QLabel,
     QGridLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QSpacerItem,
 )
 from PyQt6.QtCore import (
     QTimer,
@@ -21,6 +26,8 @@ from PyQt6.QtCore import (
     Q_ARG,
     pyqtSlot,
 )
+from PyQt6.QtGui import QFont, QFontDatabase, QColor, QPalette
+
 from loguru import logger
 from PyQt6.QtMultimedia import QSoundEffect
 import numpy as np
@@ -60,10 +67,29 @@ class ModelWorker(QObject):
 class DemoWidget(QWidget):
     def __init__(self):
         super().__init__()
+        color = QColor.fromRgb(0x404040)
+
+        # palette: QPalette = self.palette()
+        # palette.setColor(QPalette.Window, color)
+        # self.setPalette(palette)
+        w = QWidget()
+        paltte = w.palette()
+        paltte.setColor(w.backgroundRole(), Qt.GlobalColor.darkGreen)
+        w.setPalette(paltte)
+        w.setAutoFillBackground(True)
+
+        self.setWindowTitle("Fall Detection Demo")
+
+        main_layout = QVBoxLayout(self)
+
+        spacer_top = QSpacerItem(
+            40, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        main_layout.addItem(spacer_top)
 
         # Data and settings
         self.data_sequence_length = 13 * 18
-        self.g_force_threshold = 12
+
         self.is_streaming = False
         self.max_last_fall_items = 1
 
@@ -74,10 +100,32 @@ class DemoWidget(QWidget):
         self.g_force_data = deque(maxlen=self.data_sequence_length)
         self.last_fall_data = deque(maxlen=self.max_last_fall_items)
 
+        # set font
+        path_to_font = os.path.join(os.getcwd(), "assets/RobotoMono-SemiBold.ttf")
+        font_id = QFontDatabase.addApplicationFont(path_to_font)
+        font_family = QFontDatabase.applicationFontFamilies(font_id)
+
+        if font_family:
+            self.fontFamily = font_family[0]
+        else:
+            print("Font not found")
+            self.fontFamily = "Courier"
+
+        font = QFont()
+        font.setFamily(self.fontFamily)
+        font.setPointSize(18)
+        self.setFont(font)
+
         # UI setup
-        self.layout = QVBoxLayout(self)
+        # self.layout = QVBoxLayout(self)
         self.setupPlotWidget()
-        self.setupControlButtons()
+        main_layout.addWidget(self.plotWidget)
+        self.setupControlButtons(main_layout)
+
+        spacer_bottom = QSpacerItem(
+            20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding
+        )
+        main_layout.addItem(spacer_bottom)
 
         # Blink timer and siren sound
         self.blink_timer = QTimer(self)
@@ -108,9 +156,13 @@ class DemoWidget(QWidget):
         self.z_plot = self.plotWidget.plot([], pen="b", name="Z-axis")
         self.g_force_plot = self.plotWidget.plot([], pen="y", name="g_force")
         self.plotWidget.showGrid(x=True, y=True, alpha=0.3)
-        self.layout.addWidget(self.plotWidget)
+        self.plotWidget.setYRange(-50, 50)
+        self.plotWidget.setXRange(0, self.data_sequence_length)
+        self.plotWidget.setLabel("left", "Acceleration", units="m/s^2")
+        self.plotWidget.setLabel("bottom", "Data Points")
+        # self.addWidget(self.plotWidget)
 
-    def setupControlButtons(self):
+    def setupControlButtons(self, mainLayout):
         gridLayout = QGridLayout()
 
         gridLayout.setContentsMargins(20, 20, 20, 20)
@@ -121,15 +173,22 @@ class DemoWidget(QWidget):
         self.createTriggerInfoView(gridLayout, 1, 0)
         self.createFallInfoView(gridLayout, 1, 1)
 
-        self.layout.addLayout(gridLayout)
+        gridLayout.setContentsMargins(20, 20, 20, 20)
+        gridLayout.setSpacing(20)
+        mainLayout.addLayout(gridLayout)
+        mainLayout.setAlignment(gridLayout, Qt.AlignmentFlag.AlignCenter)
+
+        # self.layout.addLayout(gridLayout)
 
     def createStreamingButton(self, layout, row, column):
         self.start_streaming_button = QPushButton("Start/Stop Streaming", self)
         self.start_streaming_button.setFixedSize(300, 100)
         self.start_streaming_button.setStyleSheet(
-            "background-color: #24788F; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+            f"background-color: #24788F; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: {self.fontFamily};"
         )
         self.start_streaming_button.clicked.connect(self.toggleStreaming)
+        # hide the button for now since its not being used
+        # self.start_streaming_button.hide()
         layout.addWidget(self.start_streaming_button, row, column)
 
     def createLastFallView(self, layout, row, column):
@@ -138,7 +197,7 @@ class DemoWidget(QWidget):
         self.last_fall_label.setFixedSize(800, 100)
         self.last_fall_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.last_fall_label.setStyleSheet(
-            "background-color: #849DAB; color: white; font-size: 24px; border-radius: 8px;  font-weight: bold; font-family: Monospace;"
+            f"background-color: #849DAB; color: white; font-size: 24px; border-radius: 8px;  font-weight: bold; font-family: {self.fontFamily};"
         )
         layout.addWidget(self.last_fall_label, row, column)
 
@@ -160,45 +219,45 @@ class DemoWidget(QWidget):
         self.trigger_info_label = QLabel("Trigger Status: Ok", self)
         self.trigger_info_label.setFixedSize(300, 100)
         self.trigger_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.updateTriggerInfoView("Ok")
+        self.updateTriggerInfoView("Trigger Status: Ok")
         layout.addWidget(self.trigger_info_label, row, column)
 
     def updateTriggerInfoView(self, status):
-        status_text = "Trigger Status: " + status
+        status_text = status
         self.trigger_info_label.setText(status_text)
         if status == "Triggered":
             self.trigger_info_label.setStyleSheet(
-                "background-color: #FFBF00; color: white; font-size: 22px; border-radius: 8px;  font-weight: bold; font-family: Monospace;"
+                f"background-color: #FFBF00; color: white; font-size: 24px; border-radius: 8px;  font-weight: bold; font-family: {self.fontFamily};"
             )
         else:
             self.trigger_info_label.setStyleSheet(
-                "background-color: #FFFFFF; color: black; font-size: 22px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+                f"background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: {self.fontFamily};"
             )
 
     def createFallInfoView(self, layout, row, column):
-        self.fall_info_label = QLabel("Fall Status Ok", self)
+        self.fall_info_label = QLabel("No Fall", self)
         self.fall_info_label.setFixedSize(800, 100)
         self.fall_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.updateFallInfoView("Ok")
+        self.updateFallInfoView("No Fall")
         layout.addWidget(self.fall_info_label, row, column)
 
     def updateFallInfoView(self, status):
-        status_text = "Fall Status: " + status + " Detected"
+        status_text = status + " Detected"
         self.fall_info_label.setText(status_text)
         if status == "Fall":
             self.fall_info_label.setStyleSheet(
-                "background-color: red; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+                f"background-color: red; color: white; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: {self.fontFamily};"
             )
         else:
             self.fall_info_label.setStyleSheet(
-                "background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: Monospace;"
+                f"background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px; font-weight: bold; font-family: {self.fontFamily};"
             )
 
     def resetFall(self):
         self.fall_info_label.setText("Fall Status Ok")
         self.fall_info_label.setStyleSheet(
-            "background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px;font-weight: bold; font-family: Monospace;"
+            f"background-color: #FFFFFF; color: black; font-size: 24px; border-radius: 8px;font-weight: bold; font-family: {self.fontFamily};"
         )
 
     def toggleStreaming(self):
