@@ -21,7 +21,7 @@ class PredictStream:
         if PredictStream.scaler is None:
             PredictStream.scaler = self.load_scaler(self.path_to_scaler)
         if PredictStream.model is None:
-            PredictStream.model = tf.keras.models.load_model(self.model_path)
+            PredictStream.model = self.load_model(self.model_path)
 
     def process_data(self) -> pd.DataFrame:
         if "timestamp" not in self.data.columns:
@@ -49,6 +49,14 @@ class PredictStream:
         try:
             with open(scaler_path, "rb") as file:
                 return joblib.load(file)
+        except FileNotFoundError as e:
+            logger.error(f"File not found: {e}")
+            raise
+
+    @staticmethod
+    def load_model(model_path):
+        try:
+            return tf.keras.models.load_model(model_path)
         except FileNotFoundError as e:
             logger.error(f"File not found: {e}")
             raise

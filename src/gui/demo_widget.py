@@ -10,13 +10,51 @@ from PyQt6.QtWidgets import (
     QLabel,
     QGridLayout,
 )
-from PyQt6.QtCore import QTimer, Qt, QUrl
+from PyQt6.QtCore import (
+    QTimer,
+    Qt,
+    QUrl,
+    QObject,
+    QThread,
+    pyqtSignal,
+    QMetaObject,
+    Q_ARG,
+    pyqtSlot,
+)
+from loguru import logger
 from PyQt6.QtMultimedia import QSoundEffect
 import numpy as np
 import pyqtgraph as pg
 
 from src.tools.acceleration import Acceleration
 from src.modelling.model_trigger import ModelTrigger
+
+
+class ModelWorker(QObject):
+    updateStatusSignal = pyqtSignal(str)
+    updatePredictionSignal = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.model_trigger = ModelTrigger(csv_row_limit=78, csv_overlap=26)
+
+    @pyqtSlot(Acceleration)
+    def run_model_check(self, acceleration):
+        try:
+            self.model_trigger.update_data_window(acceleration)
+            should_model_trigger = self.model_trigger.get_latest_trigger_status()
+
+            if should_model_trigger:
+                self.updateStatusSignal.emit(should_model_trigger)
+
+            if self.model_trigger.should_display_fall():
+                self.updatePredictionSignal.emit(
+                    self.model_trigger.get_latest_prediction()
+                )
+            else:
+                self.model_trigger.predict_conclusion = None
+        except Exception as e:
+            logger.error(f"Error in model worker: {e}")
 
 
 class DemoWidget(QWidget):
@@ -53,7 +91,14 @@ class DemoWidget(QWidget):
         self.siren_sound.setSource(QUrl.fromLocalFile(alert_path))
         self.siren_sound.setVolume(1.0)
 
-        self.model_trigger = ModelTrigger(csv_row_limit=78, csv_overlap=26)
+        # Thread manager setup
+        self.thread = QThread()
+        self.worker = ModelWorker()
+        self.worker.moveToThread(self.thread)
+
+        self.worker.updateStatusSignal.connect(self.update_model_trigger_status)
+        self.worker.updatePredictionSignal.connect(self.update_prediction_status)
+        self.thread.start()
 
     def setupPlotWidget(self):
         self.plotWidget = pg.PlotWidget()
@@ -73,7 +118,6 @@ class DemoWidget(QWidget):
 
         self.createStreamingButton(gridLayout, 0, 0)
         self.createLastFallView(gridLayout, 0, 1)
-
         self.createTriggerInfoView(gridLayout, 1, 0)
         self.createFallInfoView(gridLayout, 1, 1)
 
@@ -165,8 +209,13 @@ class DemoWidget(QWidget):
 
     def receive_accelerometer_data(self, acceleration: Acceleration):
         self.update_data(acceleration)
-        self.trigger_model_check(acceleration)
         self.update_plot()
+        QMetaObject.invokeMethod(
+            self.worker,
+            "run_model_check",
+            Qt.ConnectionType.QueuedConnection,
+            Q_ARG(Acceleration, acceleration),
+        )
 
     def update_data(self, acceleration: Acceleration):
         self.x_data.append(acceleration.ax)
@@ -174,18 +223,6 @@ class DemoWidget(QWidget):
         self.z_data.append(acceleration.az)
         g_force = self.calculate_g_force(acceleration)
         self.g_force_data.append(g_force)
-
-    def trigger_model_check(self, acceleration: Acceleration):
-        self.model_trigger.update_data_window(acceleration)
-        should_model_trigger = self.model_trigger.get_latest_trigger_status()
-
-        if should_model_trigger:
-            self.update_model_trigger_status(should_model_trigger)
-
-        if self.model_trigger.should_display_fall():
-            self.update_prediction_status(self.model_trigger.get_latest_prediction())
-        else:
-            self.model_trigger.predict_conclusion = None
 
     def update_model_trigger_status(self, status: str):
         self.threshold_trigger_status = status
