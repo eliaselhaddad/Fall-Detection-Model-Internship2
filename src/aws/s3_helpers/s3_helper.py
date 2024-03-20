@@ -1,4 +1,6 @@
+from datetime import datetime
 import os
+import re
 
 import boto3
 import botocore
@@ -50,3 +52,18 @@ class S3Helpers:
         except Exception as e:
             logger.error(f"Error uploading file {filename} to S3: {e}")
             raise e
+
+    def get_latest_date(self, path) -> datetime:
+        date_pattern = re.compile(r"\d{4}-\d{2}-\d{2}")
+        latest_date = None
+
+        for filename in os.listdir(path):
+            match = date_pattern.search(filename)
+            if match:
+                date = datetime.strptime(match.group(), "%Y-%m-%d")
+                if latest_date is None or date > latest_date:
+                    latest_date = date
+
+        if latest_date is None:
+            raise ValueError("No date found")
+        return latest_date

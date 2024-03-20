@@ -103,7 +103,7 @@ class ModelUtilities:
                 padded_sequences.reshape(-1, padded_sequences.shape[-1])
             ).reshape(padded_sequences.shape)
 
-            scaler_directory = "models/scaler2"
+            scaler_directory = "models/scaler"
             if not os.path.exists(scaler_directory):
                 os.makedirs(scaler_directory)
 

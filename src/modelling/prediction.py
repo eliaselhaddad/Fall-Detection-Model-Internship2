@@ -193,7 +193,7 @@ def get_latest_model_date(directory_path):
 def main():
     date = get_latest_model_date("models/model/")
     model_path = f"models/model/{date}/fall_detection_model.keras"
-    scaler_path = "models/scaler2/scaler.pkl"
+    scaler_path = "models/scaler/scaler.pkl"
     data_path = "data/sample_cleaned/merged_data.csv"
 
     fp = FallPrediction(model_path, scaler_path, data_path)
