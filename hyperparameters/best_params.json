@@ -1,1 +1,1 @@
-{"conv1_filters": 288, "conv1_kernel": 2, "pool1_size": 2, "lstm1_units": 480, "lstm2_units": 448, "dense_units": 160, "learning_rate": 0.0001}
+{"conv1_filters": 352, "conv1_kernel": 2, "pool1_size": 4, "lstm1_units": 384, "lstm2_units": 384, "dense_units": 192, "learning_rate": 0.001}

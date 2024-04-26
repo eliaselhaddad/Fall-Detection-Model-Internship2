@@ -66,8 +66,8 @@ class ModelTraining:
             directory = f"models/model/{date}"
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            model_save_path = f"{directory}/fall_detection_model"
-            model.save(model_save_path, save_format="tf")
+            model_save_path = f"{directory}/fall_detection_model.keras"
+            model.save(model_save_path)
             self.model_helper.log_info("Model saved")
 
         except FileNotFoundError as e:
