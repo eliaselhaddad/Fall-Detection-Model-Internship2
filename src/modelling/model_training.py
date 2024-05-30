@@ -105,7 +105,7 @@ class ModelTraining:
         padded_sequences = self.model_utilities.pad_sequences(all_sequences)
         scaled_sequences = self.model_utilities.scale_sequences(padded_sequences)
 
-        """
+        
         # For training and evaluating the model, we can use the following code:
         (
             train_sequences,
@@ -121,7 +121,7 @@ class ModelTraining:
         )
 
         self.model_utilities.evaluate_model(model, test_sequences, test_labels)
-        """
+        
 
         model = self._create_model(scaled_sequences[0].shape)
         history = self.model_utilities.train_final_model(
