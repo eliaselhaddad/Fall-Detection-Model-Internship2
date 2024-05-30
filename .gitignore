@@ -419,3 +419,4 @@ data2/
 models/
 
 tuner_dir/
+.env.docker
